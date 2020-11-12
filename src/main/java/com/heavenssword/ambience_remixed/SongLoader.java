@@ -22,7 +22,7 @@ import net.minecraftforge.common.BiomeDictionary;
 public final class SongLoader
 {
     // Private Static Fields
-    private static File mainDir;
+    private static File mainMusicDir;
     private static boolean isEnabled = false;
     
     // Public Static Accessors/Mutators
@@ -37,9 +37,9 @@ public final class SongLoader
     }
 
     // Public Static Methods    
-    public static void loadFrom( File file )
+    public static void loadConfigIntoDB( File rootDirectorypath, SongDatabase songDB )
     {
-        File config = new File( file, "ambience_remixed.properties" );
+        File config = new File( rootDirectorypath, "ambience_remixed.properties" );
         if( !config.exists() )
             initConfig( config );
 
@@ -51,7 +51,8 @@ public final class SongLoader
 
             if( isEnabled )
             {
-                SongPicker.reset();
+                songDB.clear();
+                
                 Set<Object> keys = props.keySet();
                 for( Object obj : keys )
                 {
@@ -64,18 +65,22 @@ public final class SongLoader
                     String keyType = tokens[0];
                     if( keyType.equals( "event" ) )
                     {
-                        String event = tokens[1];
+                        SongEvents eventKey = SongEvents.valueOf( tokens[1].toUpperCase() );
 
-                        SongPicker.eventMap.put( event, props.getProperty( s ).split( "," ) );
+                        songDB.addSongsForEvent( eventKey, props.getProperty( s ).split( "," ) );
                     }
                     else if( keyType.equals( "biome" ) )
-                    {
-                        String biomeName = joinTokensExceptFirst( tokens ).replaceAll( "\\+", " " );
-                        
+                    {                        
+                        String biomeName = joinTokensExceptFirst( tokens );
                         Biome biome = BiomeMapper.getBiome( new ResourceLocation( biomeName ) );
-
+                        
                         if( biome != null )
-                            SongPicker.biomeMap.put( biome, props.getProperty( s ).split( "," ) );
+                        {
+                            AmbienceRemixed.getLogger().debug( "SongLoader.LoadFrom() - Biome for \"" + biomeName + "\" = " + biome.toString() );
+                            songDB.addSongsForBiome( biome, props.getProperty( s ).split( "," ) );
+                        }
+                        else
+                            AmbienceRemixed.getLogger().debug( "SongLoader.LoadFrom() - Biome was NULL!" );
                     }
                     else if( keyType.matches( "primarytag|secondarytag" ) )
                     {
@@ -86,9 +91,9 @@ public final class SongLoader
                         if( type != null )
                         {
                             if( primary )
-                                SongPicker.primaryTagMap.put( type, props.getProperty( s ).split( "," ) );
+                                songDB.addSongsForPrimaryTag( type, props.getProperty( s ).split( "," ) );
                             else
-                                SongPicker.secondaryTagMap.put( type, props.getProperty( s ).split( "," ) );
+                                songDB.addSongsForSecondaryTag( type, props.getProperty( s ).split( "," ) );
                         }
                     }
                 }
@@ -99,14 +104,37 @@ public final class SongLoader
             e.printStackTrace();
         }
 
-        File musicDir = new File( file, "music" );
+        File musicDir = new File( rootDirectorypath, "music" );
         if( !musicDir.exists() )
             musicDir.mkdir();
 
-        mainDir = musicDir;
+        mainMusicDir = musicDir;
+    }    
+
+    public static InputStream loadSongStream( String songName )
+    {
+        if( songName == null || songName.equals( "" ) || songName.equals( "null" ) )
+            return null;
+
+        File songFile = new File( mainMusicDir, songName + ".mp3" );
+        if( songFile.getName().equals( "null.mp3" ) )
+            return null;
+
+        try
+        {
+            return new FileInputStream( songFile );
+        }
+        catch( FileNotFoundException e )
+        {
+            AmbienceRemixed.getLogger().error( "AmbienceRemixed::SongLoader.loadSongStream() - File \"" + songFile + "\" was not found. Please verify that your Ambience Remixed properties file exists and is properly configured!" );
+            e.printStackTrace();
+            
+            return null;
+        }
     }
 
-    public static void initConfig( File configFile )
+    // Private Static Methods
+    private static void initConfig( File configFile )
     {
         try
         {
@@ -123,39 +151,20 @@ public final class SongLoader
             e.printStackTrace();
         }
     }
-
-    public static InputStream getStream()
-    {
-        if( MusicPlayerThread.currentSong == null || MusicPlayerThread.currentSong.equals( "null" ) )
-            return null;
-
-        File songFile = new File( mainDir, MusicPlayerThread.currentSong + ".mp3" );
-        if( songFile.getName().equals( "null.mp3" ) )
-            return null;
-
-        try
-        {
-            return new FileInputStream( songFile );
-        }
-        catch( FileNotFoundException e )
-        {
-            AmbienceRemixed.getLogger().error( "File " + songFile + " not found. Please verify that your Ambience Remixed properties file exists and is properly configured!" );
-            e.printStackTrace();
-            
-            return null;
-        }
-    }
-
-    // Private Static Methods
+    
     private static String joinTokensExceptFirst( String[] tokens )
     {
         String joinedTokensStr = "";
         int i = 0;
         for( String token : tokens )
-        {            
+        {
             if( i <= 0 )
-                continue;
-            joinedTokensStr += token;
+            {
+                ++i;
+                continue;                
+            }
+            
+            joinedTokensStr += token.toLowerCase();
             
             ++i;
         }

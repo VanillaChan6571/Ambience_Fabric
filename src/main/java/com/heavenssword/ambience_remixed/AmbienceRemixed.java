@@ -22,30 +22,45 @@ import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
+// Ambience Remixed
+import com.heavenssword.ambience_remixed.audio.JukeboxRunnable;
+import com.heavenssword.ambience_remixed.events.AmbienceRemixedChangedDimensionHandler;
+import com.heavenssword.ambience_remixed.events.AmbienceRemixedEventHub;
+import com.heavenssword.ambience_remixed.events.AmbienceRemixedGuiOpenHandler;
+import com.heavenssword.ambience_remixed.events.AmbienceRemixedPlayerHandler;
+import com.heavenssword.ambience_remixed.events.IAmbienceRemixedEventHandler;
+import com.heavenssword.ambience_remixed.audio.IAudioPlayer;
+import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.player.JLAudioPlayer;
+
 @Mod( "ambience_remixed" )
 public class AmbienceRemixed
 {
+    // Public Constants
     public static final String MOD_ID = "ambience_remixed";
     public static final String MOD_NAME = MOD_ID;
     public static final String BUILD = "GRADLE:BUILD";
     public static final String VERSION = "GRADLE:VERSION-" + BUILD;
     public static final String DEPENDENCIES = "";
 
-    private static final int WAIT_DURATION = 40;
-    public static final int FADE_DURATION = 40;
-    public static final int SILENCE_DURATION = 20;
-
     public static final String[] OBF_MC_MUSIC_TICKER = { "aM", "field_147126_aw", "mcMusicTicker" };
     public static final String[] OBF_MAP_BOSS_INFOS = { "g", "field_184060_g", "mapBossInfos" };
 
-    public static MusicPlayerThread thread;
-
-    String currentSong;
-    String nextSong;
-    int waitTick = WAIT_DURATION;
-    int fadeOutTicks = FADE_DURATION;
-    int fadeInTicks = 0;
-    int silenceTicks = 0;
+    // Private Fields
+    private AmbienceRemixedEventHub eventHub = null;
+    
+    private SongDatabase songDB = new SongDatabase();
+    
+    private JukeboxRunnable jukebox;
+    private IAudioPlayer audioPlayer = new JLAudioPlayer();
+    
+    private SongDJ songDJ = null;
+    
+    private IAmbienceRemixedEventHandler[] modEventHandlers = new IAmbienceRemixedEventHandler[]
+                                                              {
+                                                                  new AmbienceRemixedGuiOpenHandler(),
+                                                                  new AmbienceRemixedPlayerHandler(),
+                                                                  new AmbienceRemixedChangedDimensionHandler()
+                                                              };
     
     private static final Logger LOGGER = LogManager.getLogger();
     
@@ -56,7 +71,7 @@ public class AmbienceRemixed
         FMLJavaModLoadingContext.get().getModEventBus().addListener( this::initialize );
         
         // Register our mod class for server and game events.
-        MinecraftForge.EVENT_BUS.register( this );
+        MinecraftForge.EVENT_BUS.register( this );       
     }
     
     // Public Static Methods
@@ -74,100 +89,35 @@ public class AmbienceRemixed
         if( !ambienceDir.exists() )
             ambienceDir.mkdir();
 
-        SongLoader.loadFrom( ambienceDir );
+        SongLoader.loadConfigIntoDB( ambienceDir, songDB );
 
         if( SongLoader.getIsEnabled() )
-            thread = new MusicPlayerThread();        
+        {
+            jukebox = new JukeboxRunnable( audioPlayer );
         
-        MusicTicker ticker = new NilMusicTicker( mc );
-        ObfuscationReflectionHelper.setPrivateValue( Minecraft.class, mc, ticker, OBF_MC_MUSIC_TICKER[1] );
+            MusicTicker ticker = new NilMusicTicker( mc );
+            ObfuscationReflectionHelper.setPrivateValue( Minecraft.class, mc, ticker, OBF_MC_MUSIC_TICKER[1] );
+            
+            songDJ = new SongDJ( jukebox, songDB );
+            
+            // Inject the songDJ into each of our Mod Event Handlers.
+            for( IAmbienceRemixedEventHandler eventHandler : modEventHandlers )
+                eventHandler.setSongDJ( songDJ );
+            
+            // Register our internal event handlers.
+            eventHub = new AmbienceRemixedEventHub( modEventHandlers );
+            eventHub.RegisterHandlers( MinecraftForge.EVENT_BUS );
+        }
     }
 
     @SubscribeEvent
     public void onTick( ClientTickEvent event )
     {
-        if( thread == null )
+        if( !SongLoader.getIsEnabled() || jukebox == null )
             return;
 
         if( event.phase == Phase.END )
-        {
-            String songs = SongPicker.getSongsString();
-            String song = null;
-
-            if( songs != null )
-            {
-                if( nextSong == null || !songs.contains( nextSong ) )
-                {
-                    do
-                    {
-                        song = SongPicker.getRandomSong();
-                    }
-                    while( song.equals( currentSong ) && songs.contains( "," ) );
-                }
-                else
-                    song = nextSong;
-            }
-
-            if( songs != null && ( !songs.equals( MusicPlayerThread.currentSongChoices ) || ( song == null && MusicPlayerThread.currentSong != null ) || !thread.isPlaying ) )
-            {
-                if( nextSong != null && nextSong.equals( song ) )
-                    --waitTick;
-
-                if( !song.equals( currentSong ) )
-                {
-                    if( currentSong != null && MusicPlayerThread.currentSong != null && !MusicPlayerThread.currentSong.equals( song ) && songs.equals( MusicPlayerThread.currentSongChoices ) )
-                        currentSong = MusicPlayerThread.currentSong;
-                    else
-                        nextSong = song;
-                }
-                else if( nextSong != null && !songs.contains( nextSong ) )
-                    nextSong = null;
-
-                if( waitTick <= 0 )
-                {
-                    if( MusicPlayerThread.currentSong == null )
-                    {
-                        currentSong = nextSong;
-                        nextSong = null;
-                        MusicPlayerThread.currentSongChoices = songs;
-                        changeSongTo( song );
-                        fadeOutTicks = 0;
-                        waitTick = WAIT_DURATION;
-                    }
-                    else if( fadeOutTicks < FADE_DURATION )
-                    {
-                        thread.setGain( MusicPlayerThread.fadeGains[fadeOutTicks] );
-                        ++fadeOutTicks;
-                        silenceTicks = 0;
-                    }
-                    else
-                    {
-                        if( silenceTicks < SILENCE_DURATION )
-                        {
-                            ++silenceTicks;
-                        }
-                        else
-                        {
-                            nextSong = null;
-                            MusicPlayerThread.currentSongChoices = songs;
-                            changeSongTo( song );
-                            fadeOutTicks = 0;
-                            waitTick = WAIT_DURATION;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                nextSong = null;
-                thread.setGain( MusicPlayerThread.fadeGains[0] );
-                silenceTicks = 0;
-                fadeOutTicks = 0;
-                waitTick = WAIT_DURATION;
-            }
-
-            if( thread != null )
-                thread.setRealGain();
+        {            
         }
     }
 
@@ -175,19 +125,22 @@ public class AmbienceRemixed
     @SubscribeEvent
     public void onRenderOverlay( RenderGameOverlayEvent.Text event )
     {
-        if( !Minecraft.getInstance().gameSettings.showDebugInfo )
+        if( !SongLoader.getIsEnabled() || !Minecraft.getInstance().gameSettings.showDebugInfo || jukebox == null )
             return;
 
         event.getRight().add( null );
-        if( MusicPlayerThread.currentSong != null )
+        
+        String currentSongName = jukebox.getCurrentSongName();
+        if( currentSongName != null )
         {
-            String name = "Now Playing: " + SongPicker.getSongName( MusicPlayerThread.currentSong );
+            String name = "Now Playing: " + currentSongName;
             event.getRight().add( name );
         }
         
-        if( nextSong != null )
+        String nextSongName = jukebox.getCurrentSongName();
+        if( nextSongName != null )
         {
-            String name = "Next Song: " + SongPicker.getSongName( nextSong );
+            String name = "Next Song: " + nextSongName;
             event.getRight().add( name );
         }
     }
@@ -195,6 +148,7 @@ public class AmbienceRemixed
     @SubscribeEvent
     public void onBackgroundMusic( PlaySoundEvent event )
     {
+        // We want to override the game's default music choices.
         if( SongLoader.getIsEnabled() && event.getSound().getCategory().equals( SoundCategory.MUSIC ) )
         {
             if( event.isCancelable() )
@@ -203,10 +157,14 @@ public class AmbienceRemixed
             event.setResultSound( null );
         }
     }
-
-    public void changeSongTo( String song )
+    
+    @Override
+    protected void finalize()
     {
-        currentSong = song;
-        thread.play( song );
+        if( jukebox != null )
+        {
+            jukebox.forceKill();
+            jukebox.cleanup();
+        }
     }
 }

@@ -32,7 +32,7 @@ import javax.sound.sampled.Line;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
-import com.heavenssword.ambience_remixed.MusicPlayerThread;
+import com.heavenssword.ambience_remixed.audio.JukeboxRunnable;
 import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.decoder.Decoder;
 import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.decoder.JavaLayerException;
 
@@ -113,7 +113,8 @@ public class JavaSoundAudioDevice extends AudioDeviceBase
                     c.setValue(c.getMaximum());
                 }*/
                 source.start();
-         		setGain(MusicPlayerThread.realGain); // XXX ~Vazkii
+
+         		//setGain(MusicPlayerThread.realGain); // XXX ~Vazkii
             }
         } catch (RuntimeException ex)
           {

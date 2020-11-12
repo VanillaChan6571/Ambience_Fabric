@@ -1,4 +1,4 @@
-package com.heavenssword.ambience_remixed;
+package com.heavenssword.ambience_remixed.events;
 
 // Minecraft
 import net.minecraft.util.math.BlockPos;

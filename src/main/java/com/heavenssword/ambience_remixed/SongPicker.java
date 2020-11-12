@@ -9,6 +9,8 @@ import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.heavenssword.ambience_remixed.events.AmbienceRemixedEvent;
+
 // Minecraft
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
