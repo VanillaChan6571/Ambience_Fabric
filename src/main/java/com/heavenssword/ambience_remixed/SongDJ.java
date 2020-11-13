@@ -1,15 +1,5 @@
 package com.heavenssword.ambience_remixed;
 
-// Java
-import java.util.ArrayList;
-
-// Mojang
-import com.mojang.datafixers.util.Pair;
-
-// Minecraft
-import net.minecraft.world.biome.Biome;
-import net.minecraftforge.common.BiomeDictionary;
-
 // Ambience Remixed
 import com.heavenssword.ambience_remixed.audio.JukeboxRunnable;
 
@@ -19,7 +9,7 @@ public class SongDJ
     private SongDatabase songDB = null;
     private JukeboxRunnable jukebox = null;
     
-    private Pair<PlayPriority, ArrayList<String>> activePlaylist = null;
+    private IPlaylistRequest activePlaylistRequest = null;
     
     // Construction
     public SongDJ( JukeboxRunnable _jukebox, SongDatabase _songDB )
@@ -29,83 +19,101 @@ public class SongDJ
     }
     
     // Public Methods
-    public void RequestPlaylist( String[] songPlaylist, PlayPriority playPriority )
+    public void requestPlaylist( IPlaylistRequest playlistRequest )
     {
-        RequestPlaylist( songPlaylist, playPriority, false );
+        if( playlistRequest == null )
+            return;
+                
+        if( shouldReplaceActivePlaylistRequest( playlistRequest ) )
+            beginPlaylist( playlistRequest );
+        //else if( playlistRequest.getShouldAllowMerging() && priorityComparisonResult == 0 )// Same priority as the active list
+        //    MergePlaylistIntoActive( playlistRequest );
     }
     
-    public void RequestPlaylist( String[] songPlaylist, PlayPriority playPriority, boolean shouldAllowMerge )
+    public void requestPlaylistForEvent( EventPlaylistRequest playlistRequest )
     {
-        if( activePlaylist == null || PlayPriority.compareTo( playPriority, activePlaylist.getFirst() ) < 0 )
-            BeginPlaylist( songPlaylist, playPriority, true );
-        else if( shouldAllowMerge && PlayPriority.compareTo( playPriority, activePlaylist.getFirst() ) == 0 )// Same priority as the active list
-            MergePlaylistIntoActive( songPlaylist );
-    }
-    
-    public void RequestPlaylistForEvent( SongEvents eventKey, PlayPriority playPriority )
-    {
-        if( songDB != null )
+        if( songDB != null && playlistRequest != null )
         {
-            AmbienceRemixed.getLogger().debug( "SongDJ.RequestPlaylistForEvent() - Reqesting playlist for event \"" + eventKey + "\"" );
-            RequestPlaylist( songDB.getSongsForEvent( eventKey ), playPriority );
+            playlistRequest.setPlaylist( songDB.getSongsForEvent( playlistRequest.getSongEvent() ) );
+            
+            AmbienceRemixed.getLogger().debug( "SongDJ.RequestPlaylistForEvent() - Reqesting playlist for event \"" + playlistRequest.getSongEvent() + "\"" );
+            requestPlaylist( playlistRequest );
         }
     }
     
-    public void RequestPlaylistForBiome( Biome biome, PlayPriority playPriority )
+    public void requestPlaylistForBiome( BiomePlaylistRequest playlistRequest )
     {
-        if( songDB != null )
-            RequestPlaylist( songDB.getSongsForBiome( biome ), playPriority );
-    }
-    
-    public void RequestPlaylistForPrimaryTag( BiomeDictionary.Type primaryTag, PlayPriority playPriority )
-    {
-        if( songDB != null )
-            RequestPlaylist( songDB.getSongsForPrimaryTag( primaryTag ), playPriority );
-    }
-    
-    public void RequestPlaylistForSecondaryTag( BiomeDictionary.Type secondaryTag, PlayPriority playPriority )
-    {
-        if( songDB != null )
-            RequestPlaylist( songDB.getSongsForSecondaryTag( secondaryTag ), playPriority );
-    }
-    
-    // Private Methods
-    private void BeginPlaylist( String[] songPlaylist, PlayPriority playPriority, boolean shouldPlayNextImmediately )
-    {
-        ArrayList<String> newPlaylist = new ArrayList<String>();
-        
-        for( String song : songPlaylist )
+        if( songDB != null && playlistRequest != null )
         {
-            AmbienceRemixed.getLogger().debug( "SongDJ.BeginPlaylist() - Adding song to playlist : " + song );
-            newPlaylist.add( song );
+            playlistRequest.setPlaylist( songDB.getSongsForBiome( playlistRequest.getBiome() ) );
+            
+            requestPlaylist( playlistRequest );
         }
-        
-        BeginPlaylist( newPlaylist, playPriority, shouldPlayNextImmediately );
     }
     
-    private void BeginPlaylist( ArrayList<String> songPlaylist, PlayPriority playPriority, boolean shouldPlayNextImmediately )
+    public void RequestPlaylistForTag( TagPlaylistRequest playlistRequest )
     {
-        activePlaylist = new Pair<PlayPriority, ArrayList<String>>( playPriority, songPlaylist );
+        if( songDB != null && playlistRequest != null )
+        {
+            if( playlistRequest.getIsPrimary() )
+                playlistRequest.setPlaylist( songDB.getSongsForPrimaryTag( playlistRequest.getTag() ) );
+            else
+                playlistRequest.setPlaylist( songDB.getSongsForSecondaryTag( playlistRequest.getTag() ) );
+                
+            requestPlaylist( playlistRequest );
+        }
+    }
+    
+    // Private Methods    
+    private void beginPlaylist( IPlaylistRequest playlistRequest )
+    {        
+        activePlaylistRequest = playlistRequest;
         
         if( jukebox != null )
         {
-            jukebox.setPlaylist( songPlaylist.toArray( new String[0] ) );
+            jukebox.setPlaylist( activePlaylistRequest.getPlaylist().toArray( new String[0] ) );
             
-            if( shouldPlayNextImmediately )
+            if( !playlistRequest.getShouldDeferPlay() )
                 jukebox.playNextSong();
         }
     }
     
-    private void MergePlaylistIntoActive( String[] songPlaylist )
+    private boolean shouldReplaceActivePlaylistRequest( IPlaylistRequest newPlayListRequest )
     {
-        ArrayList<String> mergedList = ( activePlaylist != null ? new ArrayList<String>( activePlaylist.getSecond() ) : new ArrayList<String>() );
+        AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - playPriority val = \"" + newPlayListRequest.getPlayPriority().Value + "\"" );
+        if( activePlaylistRequest != null )
+        {
+            AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - activePlaylist val = \"" + activePlaylistRequest.getPlayPriority().Value + "\"" );
+            AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - compareTo result = \"" + PlayPriority.compareTo( newPlayListRequest.getPlayPriority(), activePlaylistRequest.getPlayPriority() ) + "\"" );
         
-        for( String song : songPlaylist )
+            boolean isHigherPriority = PlayPriority.compareTo( newPlayListRequest.getPlayPriority(), activePlaylistRequest.getPlayPriority() ) < 0;
+         
+            boolean isActivePlaylistStillValid = false;
+            if( activePlaylistRequest.getCanBeOverriden() )
+                isActivePlaylistStillValid = activePlaylistRequest.isPlaylistStillValid();
+            
+            AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - isHigherPriority = " + ( isHigherPriority ? "TRUE" : "FALSE" ) + " isActivePlaylistStillValid = " + ( isActivePlaylistStillValid ? "TRUE" : "FALSE" ) );
+            
+            return ( isHigherPriority || !isActivePlaylistStillValid );
+        }
+        
+        return true;
+    }
+    
+    /*private void mergePlaylistIntoActive( IPlaylistRequest playlistRequest )
+    {
+        ArrayList<String> mergedList = ( activePlaylistRequest != null ? new ArrayList<String>( activePlaylistRequest.getPlaylist() ) : new ArrayList<String>() );
+        
+        for( String song : playlistRequest.getPlaylist() )
         {
             if( !mergedList.contains( song ) )
                 mergedList.add( song );
         }
         
-        BeginPlaylist( mergedList, activePlaylist.getFirst(), false );
-    }
+        PlaylistRequest newPlaylistRequest = new PlaylistRequest( activePlaylistRequest ); 
+        
+        playlistRequest.setPlaylist( mergedList );
+        
+        BeginPlaylist( new PlaylistRequest( activePlaylist ), false );
+    }*/
 }

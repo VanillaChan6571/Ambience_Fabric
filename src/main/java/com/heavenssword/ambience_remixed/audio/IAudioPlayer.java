@@ -5,6 +5,10 @@ import java.io.InputStream;
 
 public interface IAudioPlayer
 {
+    public void registerAudioPlaybackListener( IAudioPlaybackListener audioPlaybackListener );
+    public void unregisterAudioPlaybackListener( IAudioPlaybackListener audioPlaybackListener );
+    public void clearAudioPlaybackListeners();
+    
     public void setStream( InputStream inputStream );
     public void clearStream();
     

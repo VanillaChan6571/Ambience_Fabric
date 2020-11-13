@@ -2,14 +2,37 @@ package com.heavenssword.ambience_remixed.audio;
 
 // Java
 import java.io.InputStream;
+import java.util.ArrayList;
 
 public abstract class AudioPlayer implements IAudioPlayer
 {
     // Protected Fields
+    protected ArrayList<IAudioPlaybackListener> audioPlaybackListeners = new ArrayList<IAudioPlaybackListener>();
+    
     protected boolean isPlaying = false;
     protected boolean isPaused = false;
     
     // Public IAudioPlayer Methods
+    @Override
+    public void registerAudioPlaybackListener( IAudioPlaybackListener audioPlaybackListener )
+    {
+        if( !audioPlaybackListeners.contains( audioPlaybackListener ) )
+            audioPlaybackListeners.add( audioPlaybackListener );
+    }
+    
+    @Override
+    public void unregisterAudioPlaybackListener( IAudioPlaybackListener audioPlaybackListener )
+    {
+        if( audioPlaybackListeners.contains( audioPlaybackListener ) )
+            audioPlaybackListeners.remove( audioPlaybackListener );
+    }
+    
+    @Override
+    public void clearAudioPlaybackListeners()
+    {
+        audioPlaybackListeners.clear();
+    }
+    
     @Override
     public abstract void setStream( InputStream inputStream );
 

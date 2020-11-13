@@ -245,7 +245,7 @@ public class AdvancedPlayer
      */
     private PlaybackEvent createEvent( AudioDevice dev, int id )
     {
-        return new PlaybackEvent( this, id, dev.getPosition() );
+        return new PlaybackEvent( this, id, dev != null ? dev.getPosition() : 0 );
     }
 
     /**
@@ -269,7 +269,8 @@ public class AdvancedPlayer
      */
     public void stop()
     {
-        listener.playbackFinished( createEvent( PlaybackEvent.STOPPED ) );
+        if( listener != null )
+            listener.playbackFinished( createEvent( PlaybackEvent.STOPPED ) );
         close();
     }
 

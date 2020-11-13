@@ -3,19 +3,23 @@ package com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.player;
 // Java
 import java.io.InputStream;
 
-import com.heavenssword.ambience_remixed.AmbienceRemixed;
 // HeavensSword
+import com.heavenssword.ambience_remixed.AmbienceRemixed;
 import com.heavenssword.ambience_remixed.audio.AudioPlayer;
+import com.heavenssword.ambience_remixed.audio.IAudioPlaybackListener;
 import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.decoder.JavaLayerException;
 import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.player.advanced.AdvancedPlayer;
+import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.player.advanced.PlaybackEvent;
+import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.player.advanced.PlaybackListener;
 
 public final class JLAudioPlayer extends AudioPlayer
 {
     // Private Fields
-    AdvancedPlayer player;
-    InputStream currentInputStream;
+    private AdvancedPlayer player;
+    private InputStream currentInputStream;
+    private JLayerPlaybackListener playbackListener = new JLayerPlaybackListener( this );
 
-    int pausedFrame = 0;
+    private int pausedFrame = 0;
 
     // Public AudioPlayer Methods
     @Override
@@ -34,7 +38,10 @@ public final class JLAudioPlayer extends AudioPlayer
                     player.openStream( inputStream );
                 }
                 else
+                {
                     player = new AdvancedPlayer( inputStream );
+                    player.setPlayBackListener( playbackListener );
+                }
 
                 currentInputStream = inputStream;
 
@@ -52,13 +59,14 @@ public final class JLAudioPlayer extends AudioPlayer
     {
         currentInputStream = null;
 
-        stop();
+        if( player != null )
+            player.close();
     }
 
     @Override
     public void play()
     {
-        AmbienceRemixed.getLogger().debug( "JLAudioPlayer.play() - Begin." );
+        AmbienceRemixed.getLogger().debug( "JLAudioPlayer.play() - Begin Play." );
 
         try
         {
@@ -190,10 +198,60 @@ public final class JLAudioPlayer extends AudioPlayer
     {
         pausedFrame = 0;
         isPaused = isPlaying = false;
+        
+        clearAudioPlaybackListeners();
 
         currentInputStream = null;
         if( player != null )
             player.close();
         player = null;
+    }
+    
+    public void onPlaybackStarted( JLayerPlaybackListener.JLAudioPlayerFriend friendClassHandshake, PlaybackEvent playbackEvent )
+    {
+        AmbienceRemixed.getLogger().debug( "JLAudioPlayer.onPlaybackFinished() - PlaybackStarted." );
+        isPlaying = true;
+        isPaused = false;
+        
+        for( IAudioPlaybackListener audioPlaybackListener : audioPlaybackListeners )
+            audioPlaybackListener.onPlaybackStarted();
+    }
+    
+    public void onPlaybackFinished( JLayerPlaybackListener.JLAudioPlayerFriend friendClassHandshake, PlaybackEvent playbackEvent )
+    {
+        AmbienceRemixed.getLogger().debug( "JLAudioPlayer.onPlaybackFinished() - PlaybackFinished." );
+        pausedFrame = 0;
+        isPaused = isPlaying = false;
+        
+        for( IAudioPlaybackListener audioPlaybackListener : audioPlaybackListeners )
+            audioPlaybackListener.onPlaybackFinished();
+    }
+    
+    // Friend Class
+    private final class JLayerPlaybackListener extends PlaybackListener
+    {
+        public final class JLAudioPlayerFriend { private JLAudioPlayerFriend() {} }
+        
+        // Private Fields
+        private JLAudioPlayer jlAudioPlayer = null;
+        
+        // Construction
+        public JLayerPlaybackListener( JLAudioPlayer _jlAudioPlayer )
+        {
+            jlAudioPlayer = _jlAudioPlayer;
+        }
+        
+        // Public Methods
+        @Override
+        public void playbackStarted( PlaybackEvent playbackEvent )
+        {   
+            jlAudioPlayer.onPlaybackStarted( new JLAudioPlayerFriend(), playbackEvent );
+        }
+        
+        @Override
+        public void playbackFinished( PlaybackEvent playbackEvent ) 
+        {
+            jlAudioPlayer.onPlaybackFinished( new JLAudioPlayerFriend(), playbackEvent );
+        }
     }
 }

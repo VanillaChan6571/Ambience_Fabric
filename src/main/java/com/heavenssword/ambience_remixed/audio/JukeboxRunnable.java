@@ -4,6 +4,7 @@ package com.heavenssword.ambience_remixed.audio;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 // Minecraft
 import net.minecraft.client.GameSettings;
@@ -15,14 +16,14 @@ import net.minecraft.util.math.MathHelper;
 import com.heavenssword.ambience_remixed.AmbienceRemixed;
 import com.heavenssword.ambience_remixed.SongLoader;
 
-public class JukeboxRunnable implements Runnable
+public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
 {
     // Private Volitiled Fields
     private volatile String currentSong = null;
     private volatile ArrayList<String> currentPlaylist = new ArrayList<String>();
     
-    private volatile boolean isQueued = false;
-    private volatile boolean shouldKill = false;
+    private AtomicBoolean isQueued = new AtomicBoolean( false );
+    private AtomicBoolean shouldKill = new AtomicBoolean( false );
 
     // Private Fields
     private IAudioPlayer audioPlayer;
@@ -49,6 +50,7 @@ public class JukeboxRunnable implements Runnable
         musicThread.setName( "Ambience Remixed Jukebox Thread" );
                
         audioPlayer = _audioPlayer;
+        audioPlayer.registerAudioPlaybackListener( this );
         
         musicThread.start();
     }
@@ -91,26 +93,25 @@ public class JukeboxRunnable implements Runnable
     public void run()
     {
         Minecraft mc = Minecraft.getInstance();
-        
+
         try
         {
-            while( !shouldKill )
-            {
-                if( isQueued && currentSong != null )
+            while( !shouldKill.get() )
+            {                
+                if( isQueued.compareAndSet( true, false ) && currentSong != null )
                 {
+                    AmbienceRemixed.getLogger().debug( "JukeboxRunnable.Run() - ClearingCurrentStream" );
                     clearCurrentStream();
                     
                     InputStream stream = SongLoader.loadSongStream( currentSong );
+                    AmbienceRemixed.getLogger().debug( "JukeboxRunnable.Run() - LoadedStream" );
                     if( stream == null )
                         continue;
 
+                    AmbienceRemixed.getLogger().debug( "JukeboxRunnable.Run() - Setting and playing Stream." );
                     audioPlayer.setStream( stream );
                     audioPlayer.play();
-                    
-                    isQueued = false;
-                }
-                else if( getGain() > audioPlayer.getMinGain() && ( !audioPlayer.isPlaying() && !audioPlayer.isPaused() ) )
-                    playNextSong();
+                }                
                 
                 if( isFading )
                 {
@@ -133,7 +134,19 @@ public class JukeboxRunnable implements Runnable
         }
     }
     
-    public void setPlaylist( String[] playlist )
+    @Override
+    public void onPlaybackStarted()
+    {        
+    }
+    
+    @Override
+    public void onPlaybackFinished()
+    {
+        if( getGain() > audioPlayer.getMinGain() )
+            playNextSong();
+    }
+    
+    public synchronized void setPlaylist( String[] playlist )
     {
         clearPlaylist();
         
@@ -158,19 +171,19 @@ public class JukeboxRunnable implements Runnable
         }        
     }
     
-    public void addSongToPlaylist( String songName )
+    public synchronized void addSongToPlaylist( String songName )
     {
         if( !currentPlaylist.contains( songName ) )
             currentPlaylist.add( songName );
     }
     
-    public void removeSongFromPlaylist( String songName )
+    public synchronized void removeSongFromPlaylist( String songName )
     {
         if( currentPlaylist.contains( songName ) )
             currentPlaylist.remove( songName );
     }
     
-    public void clearPlaylist()
+    public synchronized void clearPlaylist()
     {
         currentPlaylist.clear();
         
@@ -221,7 +234,7 @@ public class JukeboxRunnable implements Runnable
         }
     }
 
-    public void resetPlayer()
+    public synchronized void resetPlayer()
     {
         if( audioPlayer != null )
             audioPlayer.clearStream();
@@ -229,7 +242,7 @@ public class JukeboxRunnable implements Runnable
         currentSong = null;
     }
     
-    public void cleanup()
+    public synchronized void cleanup()
     {
         if( audioPlayer != null )
             audioPlayer.cleanup();
@@ -239,7 +252,7 @@ public class JukeboxRunnable implements Runnable
         currentPlaylist.clear();
     }
 
-    public void play( String song )
+    public synchronized void play( String song )
     {
         AmbienceRemixed.getLogger().debug( "JukeboxRunnable.play() - Attempted to play song : \"" + ( song == null ? "NULL" : song ) + "\"" );
         AmbienceRemixed.getLogger().debug( "JukeboxRunnable.play() - CurrentSong = \"" + ( currentSong == null ? "NULL" : currentSong ) + "\"" );
@@ -250,7 +263,9 @@ public class JukeboxRunnable implements Runnable
         resetPlayer();
 
         currentSong = song;
-        isQueued = true;
+        isQueued.set( true );
+        
+        AmbienceRemixed.getLogger().debug( "JukeboxRunnable.play() - Song : \"" + ( song == null ? "NULL" : song ) + "\" has been queued." );
         
         //isFading = true;
         //currentFadeLerp = 0.0f;
@@ -287,14 +302,14 @@ public class JukeboxRunnable implements Runnable
         return ( width != 0.0f ? rel / Math.abs( width ) : 0.0f );
     }
     
-    public void forceKill()
+    public synchronized void forceKill()
     {
         try
         {
-            resetPlayer();
+            cleanup();
             musicThread.interrupt();
 
-            shouldKill = true;
+            shouldKill.set( true );
         }
         catch( Throwable e )
         {

@@ -31,6 +31,7 @@ public enum SongEvents
     RIDING_HORSE,
     RIDING_PIG,
     
+    SLEEPING,
     FISHING,
     
     DYING,
