@@ -18,6 +18,9 @@ import com.heavenssword.ambience_remixed.AmbienceRemixed;
 public class AmbienceRemixedChangedDimensionHandler extends AmbienceRemixedEventHandler
 {
     // Private Fields
+    private TheNetherStillValid theNetherStillValidCallback = new TheNetherStillValid();
+    private TheEndStillValid theEndStillValidCallback = new TheEndStillValid();
+    
     private RegistryKey<World> currentWorldLoaded = null;
     
     // Public Methods
@@ -35,14 +38,14 @@ public class AmbienceRemixedChangedDimensionHandler extends AmbienceRemixedEvent
         if( currentWorldLoaded.equals( World.THE_NETHER ) )
         {
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
-                                                                             .playlistStillValidCallback( new TheNetherStillValid() )
+                                                                             .playlistStillValidCallback( theNetherStillValidCallback )
                                                                              .playPriority( PlayPriority.HIGH )
                                                                              .buildEventPlayRequest( SongEvents.IN_THE_NETHER ) );
         }
         else if( currentWorldLoaded.equals( World.THE_END ) )
         {
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
-                                                                             .playlistStillValidCallback( new TheEndStillValid() )
+                                                                             .playlistStillValidCallback( theEndStillValidCallback )
                                                                              .playPriority( PlayPriority.HIGH )
                                                                              .buildEventPlayRequest( SongEvents.IN_THE_END ) );
         }
@@ -58,9 +61,7 @@ public class AmbienceRemixedChangedDimensionHandler extends AmbienceRemixedEvent
     {
         @Override
         public boolean isPlaylistStillValid()
-        {            
-            AmbienceRemixed.getLogger().debug( "TheNetherStillValid.isPlaylistStillValid() - dimensionKey = " + ( currentWorldLoaded != null ? currentWorldLoaded.toString() : "NULL" ) );
-            
+        {
             return ( currentWorldLoaded != null && currentWorldLoaded.equals( World.THE_NETHER ) );
         }        
     }

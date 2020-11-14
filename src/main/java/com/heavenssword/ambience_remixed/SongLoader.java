@@ -84,7 +84,7 @@ public final class SongLoader
                         if( biome != null )
                         {
                             AmbienceRemixed.getLogger().debug( "SongLoader.LoadFrom() - Biome for \"" + biomeName + "\" = " + biome.toString() );
-                            songDB.addSongsForBiome( biome, props.getProperty( s ).split( "," ) );
+                            songDB.addSongsForBiome( biome.getRegistryName(), props.getProperty( s ).split( "," ) );
                         }
                         else
                             AmbienceRemixed.getLogger().debug( "SongLoader.LoadFrom() - Biome was NULL!" );

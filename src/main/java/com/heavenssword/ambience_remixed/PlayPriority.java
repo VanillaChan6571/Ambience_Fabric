@@ -7,10 +7,11 @@ public enum PlayPriority
     
     HIGHEST( 0 ),
     HIGH( 1 ),
-    MEDIUM( 2 ),
-    MID_LOW( 3 ),
-    LOW( 4 ),
-    LOWEST( 5 );
+    MID_HIGH( 2 ),
+    MEDIUM( 3 ),
+    MID_LOW( 4 ),
+    LOW( 5 ),
+    LOWEST( 6 );
     
     // Public Field
     public final int Value;

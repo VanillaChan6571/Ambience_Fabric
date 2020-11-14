@@ -8,7 +8,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 // Minecraft
-import net.minecraft.world.biome.Biome;
+import net.minecraft.util.ResourceLocation;
+
+// MinecraftForge
 import net.minecraftforge.common.BiomeDictionary;
 
 public final class SongDatabase
@@ -16,7 +18,7 @@ public final class SongDatabase
     // Private Fields
     private final Map<SongEvents, String[]> eventSongs = new HashMap<SongEvents, String[]>();
     private final Map<String, String[]> customEventSongs = new HashMap<String, String[]>();
-    private final Map<Biome, String[]> biomeSongs = new HashMap<Biome, String[]>();
+    private final Map<ResourceLocation, String[]> biomeSongs = new HashMap<ResourceLocation, String[]>();
     private final Map<BiomeDictionary.Type, String[]> primaryTagSongs = new HashMap<BiomeDictionary.Type, String[]>();
     private final Map<BiomeDictionary.Type, String[]> secondaryTagSongs = new HashMap<BiomeDictionary.Type, String[]>();
     
@@ -37,12 +39,12 @@ public final class SongDatabase
         customEventSongs.put( eventKey, songs );
     }
     
-    public void addSongsForBiome( Biome biome, String[] songs )
+    public void addSongsForBiome( ResourceLocation biomeResource, String[] songs )
     {
-        if( biome == null || songs == null )
+        if( biomeResource == null || songs == null )
             return;
         
-        biomeSongs.put( biome, songs );
+        biomeSongs.put( biomeResource, songs );
     }
     
     public void addSongsForPrimaryTag( BiomeDictionary.Type primaryTag, String[] songs )
@@ -77,10 +79,10 @@ public final class SongDatabase
         return null;
     }
     
-    public String[] getSongsForBiome( Biome biome )
+    public String[] getSongsForBiome( ResourceLocation biomeResource )
     {
-        if( biome != null && biomeSongs.containsKey( biome ) )
-            return biomeSongs.get( biome );
+        if( biomeResource != null && biomeSongs.containsKey( biomeResource ) )
+            return biomeSongs.get( biomeResource );
         
         return null;
     }

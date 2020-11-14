@@ -32,7 +32,6 @@ import javax.sound.sampled.Line;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
-import com.heavenssword.ambience_remixed.audio.JukeboxRunnable;
 import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.decoder.Decoder;
 import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.decoder.JavaLayerException;
 
@@ -230,12 +229,19 @@ public class JavaSoundAudioDevice extends AudioDeviceBase
 	{
 	    if( source != null )
 	    {
-	        FloatControl volumeControl = (FloatControl)source.getControl( FloatControl.Type.MASTER_GAIN );
-	        if( volumeControl != null )
+	        try
 	        {
-    	        float newGain = Math.min( Math.max( gain, volumeControl.getMinimum() ), volumeControl.getMaximum() );
-    
-    	        volumeControl.setValue( newGain );
+    	        FloatControl volumeControl = (FloatControl)source.getControl( FloatControl.Type.MASTER_GAIN );
+    	        if( volumeControl != null )
+    	        {
+        	        float newGain = Math.min( Math.max( gain, volumeControl.getMinimum() ), volumeControl.getMaximum() );
+        
+        	        volumeControl.setValue( newGain );
+    	        }
+	        }
+	        catch( IllegalArgumentException e )
+	        {
+	            e.printStackTrace();
 	        }
 	    }
 	}
@@ -244,9 +250,16 @@ public class JavaSoundAudioDevice extends AudioDeviceBase
 	{
 	    if( source != null )
 	    {
-	        FloatControl volumeControl = (FloatControl)source.getControl( FloatControl.Type.MASTER_GAIN );
-	        if( volumeControl != null )
-	            return volumeControl.getValue();
+	        try
+	        {
+    	        FloatControl volumeControl = (FloatControl)source.getControl( FloatControl.Type.MASTER_GAIN );
+    	        if( volumeControl != null )
+    	            return volumeControl.getValue();
+	        }
+	        catch( IllegalArgumentException e )
+	        {
+	            e.printStackTrace();
+	        }
 	    }
 	    
 	    return 0.0f;

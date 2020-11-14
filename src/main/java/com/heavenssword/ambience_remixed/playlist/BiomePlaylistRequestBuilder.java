@@ -1,7 +1,7 @@
 package com.heavenssword.ambience_remixed.playlist;
 
 // Minecraft
-import net.minecraft.world.biome.Biome;
+import net.minecraft.util.ResourceLocation;
 
 public final class BiomePlaylistRequestBuilder extends PlaylistRequestBuilder<BiomePlaylistRequestBuilder>
 {        
@@ -9,8 +9,8 @@ public final class BiomePlaylistRequestBuilder extends PlaylistRequestBuilder<Bi
     public BiomePlaylistRequestBuilder() {}
     
     // Public Methods
-    public BiomePlaylistRequest buildBiomePlayRequest( Biome _biome )
+    public BiomePlaylistRequest buildBiomePlayRequest( ResourceLocation _biomeRegistry )
     {
-        return new BiomePlaylistRequest( _biome, playPriority, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
+        return new BiomePlaylistRequest( _biomeRegistry, playPriority, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
     }
 }

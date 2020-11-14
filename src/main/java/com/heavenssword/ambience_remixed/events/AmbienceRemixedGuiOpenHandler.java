@@ -21,6 +21,11 @@ import com.heavenssword.ambience_remixed.playlist.IPlaylistStillValidCallback;
 
 public class AmbienceRemixedGuiOpenHandler extends AmbienceRemixedEventHandler
 {
+    // Private Fields
+    private MainMenuStillValid mainMenuStillValidCallback = new MainMenuStillValid();
+    private CreditsStillValid creditsStillValidCallback = new CreditsStillValid();
+    private DeathScreenStillValid deathScreenStillValidCallback = new DeathScreenStillValid();
+    
     @SubscribeEvent
     public void onGuiOpen( GuiOpenEvent guiOpenEvent )
     {
@@ -35,21 +40,21 @@ public class AmbienceRemixedGuiOpenHandler extends AmbienceRemixedEventHandler
         {
             AmbienceRemixed.getLogger().debug( "AmbienceRemixedGuiOpenHandler.OnGuiOpen() - Screen is of type MainMenuScreen." );
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
-                                                                             .playlistStillValidCallback( new MainMenuStillValid() )
+                                                                             .playlistStillValidCallback( mainMenuStillValidCallback )
                                                                              .playPriority( PlayPriority.HIGHEST )
                                                                              .buildEventPlayRequest( SongEvents.MAIN_MENU ) );
         }
         else if( currentScreen instanceof WinGameScreen )
         {
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
-                                                                             .playlistStillValidCallback( new CreditsStillValid() )
+                                                                             .playlistStillValidCallback( creditsStillValidCallback )
                                                                              .playPriority( PlayPriority.HIGHEST )
                                                                              .buildEventPlayRequest( SongEvents.CREDITS ) );
         }
         else if( currentScreen instanceof DeathScreen )
         {
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
-                                                                             .playlistStillValidCallback( new DeathScreenStillValid() )
+                                                                             .playlistStillValidCallback( deathScreenStillValidCallback )
                                                                              .playPriority( PlayPriority.HIGHEST )
                                                                              .buildEventPlayRequest( SongEvents.DEATH ) );
         }

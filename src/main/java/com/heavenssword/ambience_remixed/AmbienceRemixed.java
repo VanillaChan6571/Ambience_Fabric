@@ -45,6 +45,15 @@ public class AmbienceRemixed
 
     public static final String[] OBF_MC_MUSIC_TICKER = { "aM", "field_147126_aw", "mcMusicTicker" };
     public static final String[] OBF_MAP_BOSS_INFOS = { "g", "field_184060_g", "mapBossInfos" };
+    
+    public static final int UNDERGROUND_HEIGHT = 20;
+    public static final int DEEP_UNDERGROUND_HEIGHT = 55;
+    public static final int HIGH_ALITUDE_HEIGHT = 128;
+    
+    public static final int VILLAGE_POPULATION_REQUIREMENT = 3;
+    public static final double VILLAGE_RADIUS_X = 35.0;
+    public static final double VILLAGE_RADIUS_Y = 8.0;
+    public static final double VILLAGE_RADIUS_Z = 35.0;
 
     // Private Fields
     private AmbienceRemixedEventHub eventHub = null;

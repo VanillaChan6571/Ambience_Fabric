@@ -5,6 +5,8 @@ import java.util.Set;
 
 // Minecraft
 import net.minecraft.block.Blocks;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.merchant.villager.AbstractVillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
@@ -28,6 +30,7 @@ import com.heavenssword.ambience_remixed.SongEvents;
 import com.heavenssword.ambience_remixed.playlist.BiomePlaylistRequestBuilder;
 import com.heavenssword.ambience_remixed.playlist.CustomEventPlaylistRequestBuilder;
 import com.heavenssword.ambience_remixed.playlist.EventPlaylistRequestBuilder;
+import com.heavenssword.ambience_remixed.playlist.IPlaylistStillValidCallback;
 import com.heavenssword.ambience_remixed.playlist.TagPlaylistRequestBuilder;
 import com.heavenssword.ambience_remixed.AmbienceRemixed;
 import com.heavenssword.ambience_remixed.BiomeMapper;
@@ -35,6 +38,22 @@ import com.heavenssword.ambience_remixed.PlayPriority;
 
 public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
 {
+    // Private Fields
+    private DyingStillValid dyingStillValidCallback = new DyingStillValid();
+    private FishingStillValid fishingStillValidCallback = new FishingStillValid();
+    private PumpkinHeadStillValid pumpkinHeadStillValidCallback = new PumpkinHeadStillValid();
+    private UnderwaterStillValid underwaterStillValidCallback = new UnderwaterStillValid();
+    private UndergroundStillValid undergroundStillValidCallback = new UndergroundStillValid();
+    private DeepUndergroundStillValid deepUndergroundStillValidCallback = new DeepUndergroundStillValid();
+    private RainingStillValid rainingStillValidCallback = new RainingStillValid();
+    private HighAltitudeStillValid highAlitudeStillValidCallback = new HighAltitudeStillValid();
+    private NightimeStillValid nightimeStillValidCallback = new NightimeStillValid();
+    private VillageStillValid villageStillValidCallback = new VillageStillValid();
+    private VillageAtNightStillValid villageAtNightStillValidCallback = new VillageAtNightStillValid();
+    private BiomeStillValid biomeStillValidCallback = new BiomeStillValid();
+    
+    private Biome lastBiomeToPlay = null;
+    
     @SubscribeEvent
     public void onPlayerTicked( PlayerTickEvent playerTickEvent )
     {
@@ -56,10 +75,11 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         String customEventName = event.getEventName();
         if( customEventName != null && customEventName != "" )
         {
-            songDJ.requestPlaylistForCustomEvent( new CustomEventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                                         .buildCustomEventPlayRequest( customEventName ) );
-            
-            return;
+            if( songDJ.requestPlaylistForCustomEvent( new CustomEventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                             .buildCustomEventPlayRequest( customEventName ) ) )
+            {
+                return;
+            }
         }
         //
         
@@ -67,6 +87,8 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         if( player.getHealth() < 7.0f )
         {
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                             .canBeOverriden( true )
+                                                                             .playlistStillValidCallback( dyingStillValidCallback )
                                                                              .buildEventPlayRequest( SongEvents.DYING ) );
             
             return;
@@ -77,6 +99,8 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         if( player.fishingBobber != null )
         {
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                             .canBeOverriden( true )
+                                                                             .playlistStillValidCallback( fishingStillValidCallback )
                                                                              .buildEventPlayRequest( SongEvents.FISHING ) );
 
             return;
@@ -88,6 +112,8 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         if( headItem != null && headItem.getItem().equals( Blocks.PUMPKIN.asItem() ) )
         {
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                             .canBeOverriden( true )
+                                                                             .playlistStillValidCallback( pumpkinHeadStillValidCallback )
                                                                              .buildEventPlayRequest( SongEvents.WEARING_PUMPKIN_HEAD ) );
 
             return;
@@ -98,28 +124,36 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         if( player.isInWater() )
         {
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                             .canBeOverriden( true )
+                                                                             .playlistStillValidCallback( underwaterStillValidCallback )
                                                                              .buildEventPlayRequest( SongEvents.UNDERWATER ) );
 
             return;
         }
         //
         
-        boolean isNighttime = !world.isDaytime();
+        long time = world.getDayTime() % 24000;
+        boolean isNightime = time > 13300 && time < 23200;
+        
         if( world.getDimensionKey().equals( World.OVERWORLD ) )
         {
             // Player is underground
             if( !world.canSeeSky( pos ) )
             {   // Deep underground
-                if( pos.getY() < 20 )
+                if( pos.getY() < AmbienceRemixed.UNDERGROUND_HEIGHT )
                 {
                     songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                     .canBeOverriden( true )
+                                                                                     .playlistStillValidCallback( undergroundStillValidCallback )
                                                                                      .buildEventPlayRequest( SongEvents.DEEP_UNDERGROUND ) );
 
                     return;
                 }
-                else if( pos.getY() < 55 )
+                else if( pos.getY() < AmbienceRemixed.DEEP_UNDERGROUND_HEIGHT )
                 {
                     songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                     .canBeOverriden( true )
+                                                                                     .playlistStillValidCallback( deepUndergroundStillValidCallback )
                                                                                      .buildEventPlayRequest( SongEvents.UNDERGROUND ) );
 
                     return;
@@ -128,6 +162,8 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             else if( world.isRaining() )
             {
                 songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( rainingStillValidCallback )
                                                                                  .buildEventPlayRequest( SongEvents.RAIN ) );
 
                 return;
@@ -135,19 +171,23 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             //
 
             // Player is at a high altitude
-            if( pos.getY() > 128 )
+            if( pos.getY() > AmbienceRemixed.HIGH_ALITUDE_HEIGHT )
             {
                 songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( highAlitudeStillValidCallback )
                                                                                  .buildEventPlayRequest( SongEvents.HIGH_ALTITUDE ) );
 
                 return;
             }
             //
 
-            // It's nighttime
-            if( isNighttime )
+            // It's nightime
+            if( isNightime )
             {
                 songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( nightimeStillValidCallback )
                                                                                  .buildEventPlayRequest( SongEvents.NIGHT ) );
 
                 return;
@@ -157,19 +197,23 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         
         // Player is in/near a Village
         int villagerCount = world.getEntitiesWithinAABB( AbstractVillagerEntity.class,
-                                                         new AxisAlignedBB( player.getPosX() - 30, player.getPosY() - 8, player.getPosZ() - 30,
-                                                                            player.getPosX() + 30, player.getPosY() + 8, player.getPosZ() + 30 ) ).size();
-        if( villagerCount > 3 )
+                                                         new AxisAlignedBB( player.getPosX() - AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() - AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() - AmbienceRemixed.VILLAGE_RADIUS_Z,
+                                                                            player.getPosX() + AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() + AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() + AmbienceRemixed.VILLAGE_RADIUS_Z ) ).size();
+        if( villagerCount > AmbienceRemixed.VILLAGE_POPULATION_REQUIREMENT )
         {
-            if( isNighttime )
+            if( isNightime )
             {
-                songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.MID_HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( villageAtNightStillValidCallback )
                                                                                  .buildEventPlayRequest( SongEvents.VILLAGE_NIGHT ) );
 
                 return;
             }
 
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                             .canBeOverriden( true )
+                                                                             .playlistStillValidCallback( villageStillValidCallback )
                                                                              .buildEventPlayRequest( SongEvents.VILLAGE ) );
 
             return;
@@ -193,8 +237,12 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         // Player in certain Biome
         Biome biome = world.getBiome( pos );
         if( songDJ.requestPlaylistForBiome( new BiomePlaylistRequestBuilder().playPriority( PlayPriority.MEDIUM )
-                                                                             .buildBiomePlayRequest( biome ) ) )
+                                                                             .canBeOverriden( true )
+                                                                             .playlistStillValidCallback( biomeStillValidCallback )
+                                                                             .buildBiomePlayRequest( biome.getRegistryName() ) ) )
         {
+            lastBiomeToPlay = biome;
+            
             return;
         }
         //
@@ -204,15 +252,23 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         
         // Primary Tags
         if( songDJ.requestPlaylistForTags( new TagPlaylistRequestBuilder().playPriority( PlayPriority.MID_LOW )
+                                                                          .canBeOverriden( true )
+                                                                          .playlistStillValidCallback( biomeStillValidCallback )
                                                                           .buildTagPlayRequest( types, true ) ) )
         {
+            lastBiomeToPlay = biome;
+            
             return;
         }
         
         // Secondary Tags
         if( songDJ.requestPlaylistForTags( new TagPlaylistRequestBuilder().playPriority( PlayPriority.LOW )
+                                                                          .canBeOverriden( true )
+                                                                          .playlistStillValidCallback( biomeStillValidCallback )
                                                                           .buildTagPlayRequest( types, false ) ) )
         {
+            lastBiomeToPlay = biome;
+            
             return;
         }
         //
@@ -273,5 +329,220 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         
         songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.LOWEST )
                                                                          .buildEventPlayRequest( SongEvents.GENERIC ) );
+    }
+    
+    // Callback Classes
+    public final class DyingStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            
+            return ( player != null ? ( player.getHealth() < 7.0f ) : false );
+        }        
+    }
+    
+    public final class FishingStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            
+            return ( player != null ? ( player.fishingBobber != null ) : false );
+        }        
+    }
+    
+    public final class PumpkinHeadStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null )
+                return false;
+            
+            ItemStack headItem = player.getItemStackFromSlot( EquipmentSlotType.HEAD );
+            
+            return ( headItem != null ? headItem.getItem().equals( Blocks.PUMPKIN.asItem() ) : false );
+        }        
+    }
+    
+    public final class UnderwaterStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            
+            return ( player != null ? player.isInWater() : false );
+        }        
+    }
+    
+    public final class UndergroundStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null )
+                return false;
+            
+            World world = player.world;
+            BlockPos pos = new BlockPos( player.getPositionVec() );
+            
+            boolean inOverworld = world.getDimensionKey().equals( World.OVERWORLD );
+            boolean cantSeeSky = !world.canSeeSky( pos );
+            boolean isUndergroundHeight = pos.getY() < AmbienceRemixed.UNDERGROUND_HEIGHT;
+            
+            return ( inOverworld && cantSeeSky && isUndergroundHeight );
+        }        
+    }
+    
+    public final class DeepUndergroundStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null )
+                return false;
+            
+            World world = player.world;
+            BlockPos pos = new BlockPos( player.getPositionVec() );
+            
+            boolean inOverworld = world.getDimensionKey().equals( World.OVERWORLD );
+            boolean cantSeeSky = !world.canSeeSky( pos );
+            boolean isUndergroundHeight = pos.getY() < AmbienceRemixed.DEEP_UNDERGROUND_HEIGHT;
+            
+            return ( inOverworld && cantSeeSky && isUndergroundHeight );
+        }        
+    }
+    
+    public final class RainingStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null )
+                return false;
+            
+            World world = player.world;
+            
+            boolean inOverworld = world.getDimensionKey().equals( World.OVERWORLD );
+            
+            return ( inOverworld && world.isRaining() );
+        }        
+    }
+    
+    public final class HighAltitudeStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null )
+                return false;
+            
+            World world = player.world;
+            BlockPos pos = new BlockPos( player.getPositionVec() );
+            
+            boolean inOverworld = world.getDimensionKey().equals( World.OVERWORLD );
+            boolean isHighAltitudeHeight = pos.getY() > AmbienceRemixed.HIGH_ALITUDE_HEIGHT;
+            
+            return ( inOverworld && isHighAltitudeHeight );
+        }        
+    }
+    
+    public final class NightimeStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null )
+                return false;
+            
+            World world = player.world;
+            
+            long time = world.getDayTime() % 24000;
+            boolean isNightime = time > 13300 && time < 23200;
+            
+            boolean inOverworld = world.getDimensionKey().equals( World.OVERWORLD );
+            
+            return ( inOverworld && isNightime );
+        }
+    }
+    
+    public final class VillageStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null )
+                return false;
+            
+            World world = player.world;
+                        
+            int villagerCount = world.getEntitiesWithinAABB( AbstractVillagerEntity.class,
+                                                             new AxisAlignedBB( player.getPosX() - AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() - AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() - AmbienceRemixed.VILLAGE_RADIUS_Z,
+                                                                                player.getPosX() + AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() + AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() + AmbienceRemixed.VILLAGE_RADIUS_Z ) ).size();
+            
+            return ( villagerCount > AmbienceRemixed.VILLAGE_POPULATION_REQUIREMENT );
+        }        
+    }
+    
+    public final class VillageAtNightStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null )
+                return false;
+            
+            World world = player.world;
+            
+            long time = world.getDayTime() % 24000;
+            boolean isNightime = time > 13300 && time < 23200;
+            
+            int villagerCount = world.getEntitiesWithinAABB( AbstractVillagerEntity.class,
+                                                             new AxisAlignedBB( player.getPosX() - AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() - AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() - AmbienceRemixed.VILLAGE_RADIUS_Z,
+                                                                                player.getPosX() + AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() + AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() + AmbienceRemixed.VILLAGE_RADIUS_Z ) ).size();
+            
+            return ( ( villagerCount > AmbienceRemixed.VILLAGE_POPULATION_REQUIREMENT ) && isNightime );
+        }        
+    }
+    
+    public final class BiomeStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null )
+                return false;
+            
+            World world = player.world;
+            BlockPos pos = new BlockPos( player.getPositionVec() );
+            Biome biome = world.getBiome( pos );
+            
+            return ( lastBiomeToPlay == biome );
+        }
     }
 }

@@ -52,7 +52,7 @@ public class SongDJ implements IAudioPlaybackListener
             if( playlistRequest.getPlaylist() == null )
                 return false;
             
-            AmbienceRemixed.getLogger().debug( "SongDJ.RequestPlaylistForEvent() - Reqesting playlist for event \"" + playlistRequest.getSongEvent() + "\"" );
+            //AmbienceRemixed.getLogger().debug( "SongDJ.RequestPlaylistForEvent() - Reqesting playlist for event \"" + playlistRequest.getSongEvent() + "\"" );
             requestPlaylist( playlistRequest );
             
             retValue = true;
@@ -87,7 +87,7 @@ public class SongDJ implements IAudioPlaybackListener
         
         if( songDB != null && playlistRequest != null )
         {
-            playlistRequest.setPlaylist( songDB.getSongsForBiome( playlistRequest.getBiome() ) );
+            playlistRequest.setPlaylist( songDB.getSongsForBiome( playlistRequest.getBiomeRegistry() ) );
             
             if( playlistRequest.getPlaylist() == null )
                 return false;
@@ -148,7 +148,6 @@ public class SongDJ implements IAudioPlaybackListener
         if( jukebox != null && activePlaylistRequest.getPlaylist() != null )
         {
             jukebox.setPlaylist( activePlaylistRequest.getPlaylist().toArray( new String[0] ) );
-            AmbienceRemixed.getLogger().debug( "SongDJ.beginPlaylist() - Setting ShouldLoop to " + ( activePlaylistRequest.getShouldLoop() ? "TRUE" : "FALSE" ) );
             jukebox.setIsPlaylistLoopingEnabled( activePlaylistRequest.getShouldLoop() );
             
             if( !playlistRequest.getShouldDeferPlay() )
@@ -158,19 +157,19 @@ public class SongDJ implements IAudioPlaybackListener
     
     private boolean shouldReplaceActivePlaylistRequest( IPlaylistRequest newPlayListRequest )
     {
-        AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - playPriority val = \"" + newPlayListRequest.getPlayPriority().Value + "\"" );
+        //AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - playPriority val = \"" + newPlayListRequest.getPlayPriority().Value + "\"" );
         if( activePlaylistRequest != null )
         {
-            AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - activePlaylist val = \"" + activePlaylistRequest.getPlayPriority().Value + "\"" );
-            AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - compareTo result = \"" + PlayPriority.compareTo( newPlayListRequest.getPlayPriority(), activePlaylistRequest.getPlayPriority() ) + "\"" );
+            //AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - activePlaylist val = \"" + activePlaylistRequest.getPlayPriority().Value + "\"" );
+            //AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - compareTo result = \"" + PlayPriority.compareTo( newPlayListRequest.getPlayPriority(), activePlaylistRequest.getPlayPriority() ) + "\"" );
         
             boolean isHigherPriority = PlayPriority.compareTo( newPlayListRequest.getPlayPriority(), activePlaylistRequest.getPlayPriority() ) < 0;
          
-            boolean isActivePlaylistStillValid = false;
+            boolean isActivePlaylistStillValid = true;
             if( activePlaylistRequest.getCanBeOverriden() )
                 isActivePlaylistStillValid = activePlaylistRequest.isPlaylistStillValid();
             
-            AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - isHigherPriority = " + ( isHigherPriority ? "TRUE" : "FALSE" ) + " isActivePlaylistStillValid = " + ( isActivePlaylistStillValid ? "TRUE" : "FALSE" ) );
+            //AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - isHigherPriority = " + ( isHigherPriority ? "TRUE" : "FALSE" ) + " isActivePlaylistStillValid = " + ( isActivePlaylistStillValid ? "TRUE" : "FALSE" ) );
             
             return ( isHigherPriority || !isActivePlaylistStillValid );
         }

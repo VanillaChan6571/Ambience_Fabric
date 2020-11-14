@@ -28,14 +28,14 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
     
     private volatile float currentFadeLerp = 1.0f;
     
+    private volatile int currentSongIdx = -1;
+    private volatile int previousSongIdx = -1;
+    
     // Private Fields
     private IAudioPlayer audioPlayer;    
     private Thread musicThread = null;
     
-    private Random rand = new Random();    
-    
-    private int currentSongIdx = -1;
-    private int previousSongIdx = -1;
+    private Random rand = new Random();
     
     private final float fadeTime = 2.0f;
     
@@ -84,12 +84,12 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
         audioPlayer.unregisterAudioPlaybackListener( audioPlaybackListener );
     }
     
-    public String getCurrentSongName()
+    public synchronized String getCurrentSongName()
     {
         return currentSong;
     }
     
-    public String getNextSongName()
+    public synchronized String getNextSongName()
     {
         int nextSongIdx = currentSongIdx + 1;
         
@@ -99,7 +99,7 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
         return currentPlaylist.get( nextSongIdx );
     }
     
-    public String getPreviousSongName()
+    public synchronized String getPreviousSongName()
     {
         if( currentPlaylist.isEmpty() || previousSongIdx < 0 || previousSongIdx >= currentPlaylist.size() )
             return "";
@@ -206,7 +206,7 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
         currentSongIdx = previousSongIdx = -1;
     }
 
-    public void playNextSong()
+    public  void playNextSong()
     {        
         if( currentPlaylist.isEmpty() )
         {
