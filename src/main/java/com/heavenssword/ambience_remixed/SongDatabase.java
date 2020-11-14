@@ -2,6 +2,9 @@ package com.heavenssword.ambience_remixed;
 
 // Java
 import java.util.Map;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 // Minecraft
@@ -12,6 +15,7 @@ public final class SongDatabase
 {
     // Private Fields
     private final Map<SongEvents, String[]> eventSongs = new HashMap<SongEvents, String[]>();
+    private final Map<String, String[]> customEventSongs = new HashMap<String, String[]>();
     private final Map<Biome, String[]> biomeSongs = new HashMap<Biome, String[]>();
     private final Map<BiomeDictionary.Type, String[]> primaryTagSongs = new HashMap<BiomeDictionary.Type, String[]>();
     private final Map<BiomeDictionary.Type, String[]> secondaryTagSongs = new HashMap<BiomeDictionary.Type, String[]>();
@@ -23,6 +27,14 @@ public final class SongDatabase
             return;
         
         eventSongs.put( eventKey, songs );
+    }
+    
+    public void addSongsForCustomEvent( String eventKey, String[] songs )
+    {
+        if( eventKey == null || songs == null )
+            return;
+        
+        customEventSongs.put( eventKey, songs );
     }
     
     public void addSongsForBiome( Biome biome, String[] songs )
@@ -57,6 +69,14 @@ public final class SongDatabase
         return null;
     }
     
+    public String[] getSongsForCustomEvent( String eventKey )
+    {
+        if( eventKey != null && customEventSongs.containsKey( eventKey ) )
+            return customEventSongs.get( eventKey );
+
+        return null;
+    }
+    
     public String[] getSongsForBiome( Biome biome )
     {
         if( biome != null && biomeSongs.containsKey( biome ) )
@@ -65,18 +85,36 @@ public final class SongDatabase
         return null;
     }
     
-    public String[] getSongsForPrimaryTag( BiomeDictionary.Type primaryTag )
+    public String[] getSongsForPrimaryTag( Set<BiomeDictionary.Type> primaryTagSet )
     {
-        if( primaryTag != null && primaryTagSongs.containsKey( primaryTag ) )
-            return primaryTagSongs.get( primaryTag );
+        if( primaryTagSet != null )
+        {
+            ArrayList<String> mergedTagPlaylist = new ArrayList<String>();            
+            for( BiomeDictionary.Type primaryTag : primaryTagSet )
+            {
+                if( primaryTag != null && primaryTagSongs.containsKey( primaryTag ) )
+                    mergedTagPlaylist.addAll( Arrays.asList( primaryTagSongs.get( primaryTag ) ) );
+            }
+
+            return mergedTagPlaylist.toArray( new String[0] );            
+        }
         
         return null;
     }
     
-    public String[] getSongsForSecondaryTag( BiomeDictionary.Type secondaryTag )
-    {
-        if( secondaryTag != null && secondaryTagSongs.containsKey( secondaryTag ) )
-            return secondaryTagSongs.get( secondaryTag );
+    public String[] getSongsForSecondaryTag( Set<BiomeDictionary.Type> secondaryTagSet )
+    {      
+        if( secondaryTagSet != null )
+        {
+            ArrayList<String> mergedTagPlaylist = new ArrayList<String>();            
+            for( BiomeDictionary.Type secondaryTag : secondaryTagSet )
+            {
+                if( secondaryTag != null && secondaryTagSongs.containsKey( secondaryTag ) )
+                    mergedTagPlaylist.addAll( Arrays.asList( secondaryTagSongs.get( secondaryTag ) ) );
+            }
+
+            return mergedTagPlaylist.toArray( new String[0] );            
+        }
         
         return null;
     }
@@ -84,6 +122,7 @@ public final class SongDatabase
     public void clear()
     {
         eventSongs.clear();
+        customEventSongs.clear();
         biomeSongs.clear();
         primaryTagSongs.clear();
         secondaryTagSongs.clear();

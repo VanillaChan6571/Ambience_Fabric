@@ -65,9 +65,16 @@ public final class SongLoader
                     String keyType = tokens[0];
                     if( keyType.equals( "event" ) )
                     {
-                        SongEvents eventKey = SongEvents.valueOf( tokens[1].toUpperCase() );
-
-                        songDB.addSongsForEvent( eventKey, props.getProperty( s ).split( "," ) );
+                        String eventKeyStr = tokens[1].toUpperCase();
+                        
+                        // Check to see if this is a custom event
+                        if( SongEvents.hasValue( eventKeyStr ))
+                        {
+                            SongEvents eventKey = SongEvents.valueOf( eventKeyStr );    
+                            songDB.addSongsForEvent( eventKey, props.getProperty( s ).split( "," ) );
+                        }
+                        else
+                            songDB.addSongsForCustomEvent( eventKeyStr, props.getProperty( s ).split( "," ) );
                     }
                     else if( keyType.equals( "biome" ) )
                     {                        

@@ -11,9 +11,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 // Ambience Remixed
 import com.heavenssword.ambience_remixed.PlayPriority;
 import com.heavenssword.ambience_remixed.SongEvents;
+import com.heavenssword.ambience_remixed.playlist.EventPlaylistRequestBuilder;
+import com.heavenssword.ambience_remixed.playlist.IPlaylistStillValidCallback;
 import com.heavenssword.ambience_remixed.AmbienceRemixed;
-import com.heavenssword.ambience_remixed.EventPlaylistRequest;
-import com.heavenssword.ambience_remixed.IPlaylistStillValidCallback;
 
 public class AmbienceRemixedChangedDimensionHandler extends AmbienceRemixedEventHandler
 {
@@ -33,11 +33,24 @@ public class AmbienceRemixedChangedDimensionHandler extends AmbienceRemixedEvent
         
         AmbienceRemixed.getLogger().debug( "AmbienceRemixedChangedDimensionHandler.OnChangedDimensionHandler() - newDimension = " + currentWorldLoaded.toString() );
         if( currentWorldLoaded.equals( World.THE_NETHER ) )
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequest( SongEvents.IN_THE_NETHER, PlayPriority.HIGH, true, new TheNetherStillValid() ) );
+        {
+            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
+                                                                             .playlistStillValidCallback( new TheNetherStillValid() )
+                                                                             .playPriority( PlayPriority.HIGH )
+                                                                             .buildEventPlayRequest( SongEvents.IN_THE_NETHER ) );
+        }
         else if( currentWorldLoaded.equals( World.THE_END ) )
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequest( SongEvents.IN_THE_END, PlayPriority.HIGH, true, new TheEndStillValid() ) );
+        {
+            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
+                                                                             .playlistStillValidCallback( new TheEndStillValid() )
+                                                                             .playPriority( PlayPriority.HIGH )
+                                                                             .buildEventPlayRequest( SongEvents.IN_THE_END ) );
+        }
         else if( currentWorldLoaded.equals( World.OVERWORLD ) )
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequest( SongEvents.GENERIC, PlayPriority.LOWEST ) );
+        {
+            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.LOWEST )
+                                                                             .buildEventPlayRequest( SongEvents.GENERIC ) );
+        }
     }
     
     // Callback Classes

@@ -61,6 +61,8 @@ public final class JLAudioPlayer extends AudioPlayer
 
         if( player != null )
             player.close();
+        
+        isPaused = isPlaying = false;
     }
 
     @Override

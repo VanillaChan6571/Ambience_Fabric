@@ -1,4 +1,4 @@
-package com.heavenssword.ambience_remixed;
+package com.heavenssword.ambience_remixed.playlist;
 
 public interface IPlaylistStillValidCallback
 {

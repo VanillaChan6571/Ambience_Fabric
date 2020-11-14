@@ -5,6 +5,7 @@ import java.io.File;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import net.minecraft.client.GameSettings;
 // Minecraft
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.MusicTicker;
@@ -117,7 +118,8 @@ public class AmbienceRemixed
             return;
 
         if( event.phase == Phase.END )
-        {            
+        {
+            updateFromGameVolume();
         }
     }
 
@@ -166,5 +168,20 @@ public class AmbienceRemixed
             jukebox.forceKill();
             jukebox.cleanup();
         }
+    }
+    
+    // Private Fields
+    @SuppressWarnings( "resource" )
+    private void updateFromGameVolume()
+    {
+        if( jukebox == null || audioPlayer == null )
+            return;
+        
+        GameSettings settings = Minecraft.getInstance().gameSettings;
+        float musicGain = settings.getSoundLevel( SoundCategory.MUSIC ) * settings.getSoundLevel( SoundCategory.MASTER );
+        
+        float normalizedRealGain = audioPlayer.getMinGain() + ( audioPlayer.getMaxGain() - audioPlayer.getMinGain() ) * musicGain;        
+        
+        jukebox.setGain( normalizedRealGain );
     }
 }

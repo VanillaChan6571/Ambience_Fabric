@@ -20,8 +20,8 @@ public enum SongEvents
     RAIN,
     UNDERWATER,
     UNDERGROUND,
-    DEEP_UNDEGROUND,
-    HIGH_UP,
+    DEEP_UNDERGROUND,
+    HIGH_ALTITUDE,
     
     VILLAGE,
     VILLAGE_NIGHT,
@@ -37,5 +37,22 @@ public enum SongEvents
     DYING,
     DEATH,
     
-    WEARING_PUMPKIN_HEAD
+    WEARING_PUMPKIN_HEAD;
+    
+    // Public Methods
+    public static boolean hasValue( String value )
+    {
+        SongEvents foundValue = null;
+        
+        try
+        {
+            foundValue = valueOf( value );
+        }
+        catch( IllegalArgumentException e )
+        {
+            return false;
+        }
+        
+        return ( foundValue != null );
+    }
 }

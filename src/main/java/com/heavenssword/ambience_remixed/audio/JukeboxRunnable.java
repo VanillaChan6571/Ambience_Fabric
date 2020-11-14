@@ -7,9 +7,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 // Minecraft
-import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.MathHelper;
 
 // Ambience Remixed
@@ -24,22 +22,22 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
     
     private AtomicBoolean isQueued = new AtomicBoolean( false );
     private AtomicBoolean shouldKill = new AtomicBoolean( false );
-
-    // Private Fields
-    private IAudioPlayer audioPlayer;
+    private AtomicBoolean isFading = new AtomicBoolean( false );
+    private AtomicBoolean isPlaylistShuffleEnabled = new AtomicBoolean( true );
+    private AtomicBoolean isPlaylistLoopingEnabled = new AtomicBoolean( true );
     
+    private volatile float currentFadeLerp = 1.0f;
+    
+    // Private Fields
+    private IAudioPlayer audioPlayer;    
     private Thread musicThread = null;
     
-    private Random rand = new Random();
+    private Random rand = new Random();    
     
-    private boolean isPlaylistShuffleEnabled = true;
+    private int currentSongIdx = -1;
+    private int previousSongIdx = -1;
     
-    private int currentSongIdx = 0;
-    private int previousSongIdx = 0;
-    
-    private boolean isFading = false;
-    private float currentFadeLerp = 1.0f;
-    private final float fadeTime = 2.0f; 
+    private final float fadeTime = 2.0f;
     
     // Construction
     public JukeboxRunnable( IAudioPlayer _audioPlayer )
@@ -56,14 +54,34 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
     }
     
     // Public Methods
-    public boolean getIsPlaylistShuffleEnabled()
+    public synchronized boolean getIsPlaylistShuffleEnabled()
     {
-        return isPlaylistShuffleEnabled;
+        return isPlaylistShuffleEnabled.get();
     }
     
-    public void setIsPlaylistShuffleEnabled( boolean isShuffleEnabled )
+    public synchronized void setIsPlaylistShuffleEnabled( boolean isShuffleEnabled )
     {
-        isPlaylistShuffleEnabled = isShuffleEnabled;
+        isPlaylistShuffleEnabled.set( isShuffleEnabled );
+    }
+    
+    public synchronized boolean getIsPlaylistLoopingEnabled()
+    {
+        return isPlaylistLoopingEnabled.get();
+    }
+    
+    public synchronized void setIsPlaylistLoopingEnabled( boolean isLoopingEnabled )
+    {
+        isPlaylistLoopingEnabled.set( isLoopingEnabled );
+    }
+    
+    public synchronized void registerAudioPlaybackListener( IAudioPlaybackListener audioPlaybackListener )
+    {
+        audioPlayer.registerAudioPlaybackListener( audioPlaybackListener );
+    }
+    
+    public synchronized void unregisterAudioPlaybackListener( IAudioPlaybackListener audioPlaybackListener )
+    {
+        audioPlayer.unregisterAudioPlaybackListener( audioPlaybackListener );
     }
     
     public String getCurrentSongName()
@@ -113,7 +131,7 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
                     audioPlayer.play();
                 }                
                 
-                if( isFading )
+                if( isFading.get() )
                 {
                     currentFadeLerp = MathHelper.lerp( currentFadeLerp + ( mc.getTickLength() / fadeTime ), 0.0f, 1.0f );
                     AmbienceRemixed.getLogger().debug( "JukeboxRunnable.Run() - CurrentFadeLerp = " + currentFadeLerp );
@@ -121,11 +139,9 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
                     if( currentFadeLerp >= 1.0f )
                     {
                         currentFadeLerp = 1.0f;
-                        isFading = false;
+                        isFading.set( false );
                     }
                 }
-                
-                updateFromGameVolume();
             }
         }
         catch( Exception e )
@@ -150,7 +166,7 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
     {
         clearPlaylist();
         
-        if( isPlaylistShuffleEnabled )
+        if( isPlaylistShuffleEnabled.get() )
         {
             ArrayList<String> shuffledList = new ArrayList<String>();
             for( String song : playlist )
@@ -187,7 +203,7 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
     {
         currentPlaylist.clear();
         
-        currentSongIdx = previousSongIdx = 0;
+        currentSongIdx = previousSongIdx = -1;
     }
 
     public void playNextSong()
@@ -205,7 +221,15 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
             ++currentSongIdx;
             
             if( currentSongIdx >= currentPlaylist.size() )
+            {
                 currentSongIdx = 0;
+                
+                // We've played the last song in the playlist, do we loop?
+                AmbienceRemixed.getLogger().debug( "JukeboxRunnable.playNextSong() - ShouldLoop = " + ( isPlaylistLoopingEnabled.get() ? "TRUE" : "FALSE" ) );
+                
+                if( !isPlaylistLoopingEnabled.get() )
+                    return;
+            }
             
             AmbienceRemixed.getLogger().debug( "JukeboxRunnable.playNextSong() - currentSongIdx = " + currentSongIdx );
             
@@ -251,6 +275,16 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
         currentSong = null;
         currentPlaylist.clear();
     }
+    
+    public synchronized boolean isPlaying()
+    {
+        return ( audioPlayer != null ? audioPlayer.isPlaying() : false );
+    }
+    
+    public synchronized boolean isPaused()
+    {
+        return ( audioPlayer != null ? audioPlayer.isPaused() : false );
+    }
 
     public synchronized void play( String song )
     {
@@ -271,30 +305,34 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
         //currentFadeLerp = 0.0f;
     }
 
-    public float getGain()
+    public synchronized float getGain()
     {        
         return ( audioPlayer != null ? audioPlayer.getGain() : 0.0f );
     }
 
-    public void addGain( float gain )
+    public synchronized void addGain( float gain )
     {
         setGain( getGain() + gain );
     }
 
-    public void setGain( float gain )
+    public synchronized void setGain( float gain )
     {
         if( audioPlayer == null )
             return;
 
-        audioPlayer.setGain( Math.min( audioPlayer.getMaxGain(), Math.max( audioPlayer.getMinGain(), gain ) ) );
+        audioPlayer.setGain( MathHelper.clamp( gain, audioPlayer.getMinGain(), audioPlayer.getMaxGain() ) );
+        
+        // If the game volume was turned all the way down, just stop the player to save resources.
+        if( getRelativeVolume() <= 0.0f )
+            resetPlayer();
     }
 
-    public float getRelativeVolume()
+    public synchronized float getRelativeVolume()
     {
         return getRelativeVolume( getGain() );
     }
 
-    public float getRelativeVolume( float gain )
+    public synchronized float getRelativeVolume( float gain )
     {
         float width = audioPlayer.getMaxGain() - audioPlayer.getMinGain();
         float rel = Math.abs( gain - audioPlayer.getMinGain() );
@@ -317,28 +355,7 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener
         }
     }
     
-    // Private Methods
-    @SuppressWarnings( "resource" )
-    private void updateFromGameVolume()
-    {
-        if( audioPlayer == null )
-            return;
-        
-        GameSettings settings = Minecraft.getInstance().gameSettings;
-        float musicGain = settings.getSoundLevel( SoundCategory.MUSIC ) * settings.getSoundLevel( SoundCategory.MASTER );
-        
-        float normalizedRealGain = audioPlayer.getMinGain() + ( audioPlayer.getMaxGain() - audioPlayer.getMinGain() ) * musicGain;        
-        
-        //AmbienceRemixed.getLogger().debug( "JukeboxRunnable.updateFromGameVolume() - musicGain is " + musicGain );
-        //AmbienceRemixed.getLogger().debug( "JukeboxRunnable.updateFromGameVolume() - normalizedRealGain is " + normalizedRealGain );
-        //AmbienceRemixed.getLogger().debug( "JukeboxRunnable.updateFromGameVolume() - Setting Gain to " + ( normalizedRealGain * currentFadeLerp ) );
-        audioPlayer.setGain( normalizedRealGain * currentFadeLerp );
-        
-        // If the game volume was turned all the way down, just stop the player to save resources.
-        if( musicGain <= 0.0f )
-            resetPlayer();
-    }
-    
+    // Private Methods    
     private void clearCurrentStream()
     {
         if( audioPlayer != null )

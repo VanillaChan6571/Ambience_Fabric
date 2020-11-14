@@ -14,10 +14,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 // Ambience Remixed
 import com.heavenssword.ambience_remixed.AmbienceRemixed;
-import com.heavenssword.ambience_remixed.EventPlaylistRequest;
-import com.heavenssword.ambience_remixed.IPlaylistStillValidCallback;
 import com.heavenssword.ambience_remixed.PlayPriority;
 import com.heavenssword.ambience_remixed.SongEvents;
+import com.heavenssword.ambience_remixed.playlist.EventPlaylistRequestBuilder;
+import com.heavenssword.ambience_remixed.playlist.IPlaylistStillValidCallback;
 
 public class AmbienceRemixedGuiOpenHandler extends AmbienceRemixedEventHandler
 {
@@ -34,12 +34,25 @@ public class AmbienceRemixedGuiOpenHandler extends AmbienceRemixedEventHandler
         if( currentScreen instanceof MainMenuScreen || currentScreen instanceof MultiplayerScreen )
         {
             AmbienceRemixed.getLogger().debug( "AmbienceRemixedGuiOpenHandler.OnGuiOpen() - Screen is of type MainMenuScreen." );
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequest( SongEvents.MAIN_MENU, PlayPriority.HIGHEST, true, new MainMenuStillValid() ) );
+            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
+                                                                             .playlistStillValidCallback( new MainMenuStillValid() )
+                                                                             .playPriority( PlayPriority.HIGHEST )
+                                                                             .buildEventPlayRequest( SongEvents.MAIN_MENU ) );
         }
         else if( currentScreen instanceof WinGameScreen )
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequest( SongEvents.CREDITS, PlayPriority.HIGHEST, true, new CreditsStillValid() ) );
+        {
+            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
+                                                                             .playlistStillValidCallback( new CreditsStillValid() )
+                                                                             .playPriority( PlayPriority.HIGHEST )
+                                                                             .buildEventPlayRequest( SongEvents.CREDITS ) );
+        }
         else if( currentScreen instanceof DeathScreen )
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequest( SongEvents.DEATH, PlayPriority.HIGHEST, true, new DeathScreenStillValid() ) );
+        {
+            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
+                                                                             .playlistStillValidCallback( new DeathScreenStillValid() )
+                                                                             .playPriority( PlayPriority.HIGHEST )
+                                                                             .buildEventPlayRequest( SongEvents.DEATH ) );
+        }
     }
     
     // Callback Classes
