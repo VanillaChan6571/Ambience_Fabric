@@ -76,6 +76,7 @@ public interface AudioDevice
 	 * by the audio device. 
 	 */
 	public void write(short[] samples, int offs, int len) throws JavaLayerException;
+	public void write(short[] samples, int offs, int len, float defaultGain) throws JavaLayerException;
 		
 	
 	/**

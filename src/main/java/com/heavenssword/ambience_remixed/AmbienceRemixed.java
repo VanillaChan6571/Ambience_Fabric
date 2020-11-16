@@ -9,6 +9,7 @@ import net.minecraft.client.GameSettings;
 // Minecraft
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.MusicTicker;
+import net.minecraft.util.FrameTimer;
 import net.minecraft.util.SoundCategory;
 
 // MinecraftForge
@@ -16,7 +17,6 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.sound.PlaySoundEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent.ClientTickEvent;
-import net.minecraftforge.event.TickEvent.Phase;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
@@ -55,7 +55,10 @@ public class AmbienceRemixed
     public static final double VILLAGE_RADIUS_Y = 8.0;
     public static final double VILLAGE_RADIUS_Z = 35.0;
 
+    public static volatile double DeltaTime = 0.0;
+    
     // Private Fields
+    private FrameTimer frameTimer = null;
     private AmbienceRemixedEventHub eventHub = null;
     
     private SongDatabase songDB = new SongDatabase();
@@ -103,7 +106,10 @@ public class AmbienceRemixed
 
         if( SongLoader.getIsEnabled() )
         {
+            frameTimer = Minecraft.getInstance().getFrameTimer();
+            
             jukebox = new JukeboxRunnable( audioPlayer );
+            updateFromGameVolume();
         
             MusicTicker ticker = new NilMusicTicker( mc );
             ObfuscationReflectionHelper.setPrivateValue( Minecraft.class, mc, ticker, OBF_MC_MUSIC_TICKER[1] );
@@ -123,12 +129,17 @@ public class AmbienceRemixed
     @SubscribeEvent
     public void onTick( ClientTickEvent event )
     {
-        if( !SongLoader.getIsEnabled() || jukebox == null )
+        if( !SongLoader.getIsEnabled() || event == null )
             return;
 
-        if( event.phase == Phase.END )
+        switch( event.phase )
         {
-            updateFromGameVolume();
+            case START:
+                updateFromGameVolume();
+            break;
+            case END:    
+                DeltaTime = (double)frameTimer.getFrames()[ frameTimer.getIndex() ] * 0.000000001;// Convert from ns to s
+            break;
         }
     }
 
@@ -148,7 +159,7 @@ public class AmbienceRemixed
             event.getRight().add( name );
         }
         
-        String nextSongName = jukebox.getCurrentSongName();
+        String nextSongName = jukebox.getNextSongName();
         if( nextSongName != null )
         {
             String name = "Next Song: " + nextSongName;
@@ -183,14 +194,11 @@ public class AmbienceRemixed
     @SuppressWarnings( "resource" )
     private void updateFromGameVolume()
     {
-        if( jukebox == null || audioPlayer == null )
+        if( jukebox == null )
             return;
         
         GameSettings settings = Minecraft.getInstance().gameSettings;
-        float musicGain = settings.getSoundLevel( SoundCategory.MUSIC ) * settings.getSoundLevel( SoundCategory.MASTER );
         
-        float normalizedRealGain = audioPlayer.getMinGain() + ( audioPlayer.getMaxGain() - audioPlayer.getMinGain() ) * musicGain;        
-        
-        jukebox.setGain( normalizedRealGain );
+        jukebox.setVolume( settings.getSoundLevel( SoundCategory.MUSIC ) * settings.getSoundLevel( SoundCategory.MASTER ) );
     }
 }

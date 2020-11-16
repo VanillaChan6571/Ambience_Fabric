@@ -19,6 +19,11 @@ public interface IAudioPlayer
     public boolean isPlaying();
     public boolean isPaused();
     
+    public void setVolume( float volume );
+    public float getVolume();
+    public float getMinVolume();
+    public float getMaxVolume();
+    
     public void setGain( float gain );
     public float getGain();
     public float getMinGain();

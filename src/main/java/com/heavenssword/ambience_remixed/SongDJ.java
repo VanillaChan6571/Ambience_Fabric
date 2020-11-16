@@ -9,6 +9,12 @@ import com.heavenssword.ambience_remixed.playlist.EventPlaylistRequest;
 import com.heavenssword.ambience_remixed.playlist.EventPlaylistRequestBuilder;
 import com.heavenssword.ambience_remixed.playlist.IPlaylistRequest;
 import com.heavenssword.ambience_remixed.playlist.TagPlaylistRequest;
+
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.BiomeDictionary;
+
+import java.util.Set;
+
 import com.heavenssword.ambience_remixed.audio.IAudioPlaybackListener;
 
 public class SongDJ implements IAudioPlaybackListener
@@ -30,6 +36,46 @@ public class SongDJ implements IAudioPlaybackListener
     }
     
     // Public Methods
+    public boolean canRequestEventPlaylist( SongEvents eventKey )
+    {
+        if( songDB != null )
+            return songDB.doesEventHavePlaylist( eventKey );
+        
+        return false;
+    }
+    
+    public boolean canRequestCustomEventPlaylist( String eventKey )
+    {
+        if( songDB != null )
+            return songDB.doesCustomEventHavePlaylist( eventKey );
+        
+        return false;
+    }
+    
+    public boolean canRequestBiomePlaylist( ResourceLocation eventKey )
+    {
+        if( songDB != null )
+            return songDB.doesBiomeHavePlaylist( eventKey );
+        
+        return false;
+    }
+    
+    public boolean canRequestPrimaryTagSetPlaylist( Set<BiomeDictionary.Type> primaryTagSet )
+    {
+        if( songDB != null )
+            return songDB.doesPrimaryTagSetHavePlaylist( primaryTagSet );
+        
+        return false;
+    }
+    
+    public boolean canRequestSecondaryTagSetPlaylist( Set<BiomeDictionary.Type> secondaryTagSet )
+    {
+        if( songDB != null )
+            return songDB.doesSecondaryTagSetHavePlaylist( secondaryTagSet );
+        
+        return false;
+    }
+    
     public void requestPlaylist( IPlaylistRequest playlistRequest )
     {
         if( playlistRequest == null )

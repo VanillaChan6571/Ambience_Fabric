@@ -36,233 +36,242 @@ import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.decoder.Decoder;
 import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.decoder.JavaLayerException;
 
 /**
- * The <code>JavaSoundAudioDevice</code> implements an audio
- * device by using the JavaSound API.
+ * The <code>JavaSoundAudioDevice</code> implements an audio device by using the
+ * JavaSound API.
  *
  * @since 0.0.8
  * @author Mat McGowan
  */
 public class JavaSoundAudioDevice extends AudioDeviceBase
 {
-	private SourceDataLine	source = null;
+    private SourceDataLine source = null;
 
-	private AudioFormat		fmt = null;
+    private AudioFormat fmt = null;
 
-	private byte[]			byteBuf = new byte[4096];
+    private byte[] byteBuf = new byte[4096];
 
-	protected void setAudioFormat(AudioFormat fmt0)
-	{
-		fmt = fmt0;
-	}
+    protected void setAudioFormat( AudioFormat fmt0 )
+    {
+        fmt = fmt0;
+    }
 
-	protected AudioFormat getAudioFormat()
-	{
-		if (fmt==null)
-		{
-			Decoder decoder = getDecoder();
-			fmt = new AudioFormat(decoder.getOutputFrequency(),
-								  16,
-								  decoder.getOutputChannels(),
-								  true,
-								  false);
-		}
-		return fmt;
-	}
+    protected AudioFormat getAudioFormat()
+    {
+        if( fmt == null )
+        {
+            Decoder decoder = getDecoder();
+            fmt = new AudioFormat( decoder.getOutputFrequency(), 16, decoder.getOutputChannels(), true, false );
+        }
+        return fmt;
+    }
 
-	protected DataLine.Info getSourceLineInfo()
-	{
-		AudioFormat fmt = getAudioFormat();
-		//DataLine.Info info = new DataLine.Info(SourceDataLine.class, fmt, 4000);
-		DataLine.Info info = new DataLine.Info(SourceDataLine.class, fmt);
-		return info;
-	}
+    protected DataLine.Info getSourceLineInfo()
+    {
+        AudioFormat fmt = getAudioFormat();
+        // DataLine.Info info = new DataLine.Info(SourceDataLine.class, fmt, 4000);
+        DataLine.Info info = new DataLine.Info( SourceDataLine.class, fmt );
+        return info;
+    }
 
-	public void open(AudioFormat fmt) throws JavaLayerException
-	{
-		if (!isOpen())
-		{
-			setAudioFormat(fmt);
-			openImpl();
-			setOpen(true);
-		}
-	}
+    public void open( AudioFormat fmt ) throws JavaLayerException
+    {
+        if( !isOpen() )
+        {
+            setAudioFormat( fmt );
+            openImpl();
+            setOpen( true );
+        }
+    }
 
-	protected void openImpl()
-		throws JavaLayerException
-	{
-	}
+    protected void openImpl() throws JavaLayerException
+    {
+    }
 
+    protected void createSource() throws JavaLayerException
+    {
+        createSource( 0.0f );
+    }
 
-	// createSource fix.
-	protected void createSource() throws JavaLayerException
+    // createSource fix.
+    protected void createSource( float defaultGain ) throws JavaLayerException
     {
         Throwable t = null;
         try
         {
-			Line line = AudioSystem.getLine(getSourceLineInfo());
-            if (line instanceof SourceDataLine)
+            Line line = AudioSystem.getLine( getSourceLineInfo() );
+            if( line instanceof SourceDataLine )
             {
-         		source = (SourceDataLine)line;
-                //source.open(fmt, millisecondsToBytes(fmt, 2000));
-				source.open(fmt);
+                source = (SourceDataLine)line;
+                // source.open(fmt, millisecondsToBytes(fmt, 2000));
+                source.open( fmt );
                 /*
-                if (source.isControlSupported(FloatControl.Type.MASTER_GAIN))
-                {
-					FloatControl c = (FloatControl)source.getControl(FloatControl.Type.MASTER_GAIN);
-                    c.setValue(c.getMaximum());
-                }*/
+                 * if (source.isControlSupported(FloatControl.Type.MASTER_GAIN)) { FloatControl
+                 * c = (FloatControl)source.getControl(FloatControl.Type.MASTER_GAIN);
+                 * c.setValue(c.getMaximum()); }
+                 */
                 source.start();
 
-         		//setGain(MusicPlayerThread.realGain); // XXX ~Vazkii
+                // setGain(MusicPlayerThread.realGain); // XXX ~Vazkii
+                setGain( defaultGain ); // XXX ~HeavensSword
             }
-        } catch (RuntimeException ex)
-          {
-			  t = ex;
-          }
-          catch (LinkageError ex)
-          {
-              t = ex;
-          }
-          catch (LineUnavailableException ex)
-          {
-              t = ex;
-          }
-		if (source==null) throw new JavaLayerException("cannot obtain source audio line", t);
+        }
+        catch( RuntimeException ex )
+        {
+            t = ex;
+        }
+        catch( LinkageError ex )
+        {
+            t = ex;
+        }
+        catch( LineUnavailableException ex )
+        {
+            t = ex;
+        }
+        if( source == null )
+            throw new JavaLayerException( "cannot obtain source audio line", t );
     }
 
-	public int millisecondsToBytes(AudioFormat fmt, int time)
-	{
-		return (int)(time*(fmt.getSampleRate()*fmt.getChannels()*fmt.getSampleSizeInBits())/8000.0);
-	}
+    public int millisecondsToBytes( AudioFormat fmt, int time )
+    {
+        return (int)( time * ( fmt.getSampleRate() * fmt.getChannels() * fmt.getSampleSizeInBits() ) / 8000.0 );
+    }
 
-	protected void closeImpl()
-	{
-		if (source!=null)
-		{
-			source.close();
-		}
-	}
+    protected void closeImpl()
+    {
+        if( source != null )
+        {
+            source.close();
+        }
+    }
 
-	protected void writeImpl(short[] samples, int offs, int len)
-		throws JavaLayerException
-	{
-		if (source==null)
-			createSource();
+    protected void writeImpl( short[] samples, int offs, int len ) throws JavaLayerException
+    {
+        if( source == null )
+            createSource();
 
-		byte[] b = toByteArray(samples, offs, len);
-		source.write(b, 0, len*2);
-	}
+        byte[] b = toByteArray( samples, offs, len );
+        source.write( b, 0, len * 2 );
+    }
 
-	protected byte[] getByteArray(int length)
-	{
-		if (byteBuf.length < length)
-		{
-			byteBuf = new byte[length+1024];
-		}
-		return byteBuf;
-	}
+    protected void writeImpl( short[] samples, int offs, int len, float defaultGain ) throws JavaLayerException
+    {
+        if( source == null )
+            createSource( defaultGain );
 
-	protected byte[] toByteArray(short[] samples, int offs, int len)
-	{
-		byte[] b = getByteArray(len*2);
-		int idx = 0;
-		short s;
-		while (len-- > 0)
-		{
-			s = samples[offs++];
-			b[idx++] = (byte)s;
-			b[idx++] = (byte)(s>>>8);
-		}
-		return b;
-	}
+        byte[] b = toByteArray( samples, offs, len );
+        source.write( b, 0, len * 2 );
+    }
 
-	protected void flushImpl()
-	{
-		if (source!=null)
-		{
-			source.drain();
-		}
-	}
+    protected byte[] getByteArray( int length )
+    {
+        if( byteBuf.length < length )
+        {
+            byteBuf = new byte[length + 1024];
+        }
+        return byteBuf;
+    }
 
-	public int getPosition()
-	{
-		int pos = 0;
-		if (source!=null)
-		{
-			pos = (int)(source.getMicrosecondPosition()/1000);
-		}
-		return pos;
-	}
+    protected byte[] toByteArray( short[] samples, int offs, int len )
+    {
+        byte[] b = getByteArray( len * 2 );
+        int idx = 0;
+        short s;
+        while( len-- > 0 )
+        {
+            s = samples[offs++];
+            b[idx++] = (byte)s;
+            b[idx++] = (byte)( s >>> 8 );
+        }
+        return b;
+    }
 
-	/**
-	 * Runs a short test by playing a short silent sound.
-	 */
-	public void test()
-		throws JavaLayerException
-	{
-		try
-		{
-			open(new AudioFormat(22050, 16, 1, true, false));
-			short[] data = new short[22050/10];
-			write(data, 0, data.length);
-			flush();
-			close();
-		}
-		catch (RuntimeException ex)
-		{
-			throw new JavaLayerException("Device test failed: "+ex);
-		}
+    protected void flushImpl()
+    {
+        if( source != null )
+        {
+            source.drain();
+        }
+    }
 
-	}
-	
-	/* ====================================================================================
-	 * XXX
-	 * Functions added by necessity, not present in the original code.
-	 * ~Vazkii
-	 * 
-	 * EDIT: I've modified it again slightly. - HeavensSword
-	 * ====================================================================================
-	 */
-	
-	// From http://stackoverflow.com/a/2324408
-	public void setGain( float gain )
-	{
-	    if( source != null )
-	    {
-	        try
-	        {
-    	        FloatControl volumeControl = (FloatControl)source.getControl( FloatControl.Type.MASTER_GAIN );
-    	        if( volumeControl != null )
-    	        {
-        	        float newGain = Math.min( Math.max( gain, volumeControl.getMinimum() ), volumeControl.getMaximum() );
-        
-        	        volumeControl.setValue( newGain );
-    	        }
-	        }
-	        catch( IllegalArgumentException e )
-	        {
-	            e.printStackTrace();
-	        }
-	    }
-	}
-	
-	public float getGain()
-	{
-	    if( source != null )
-	    {
-	        try
-	        {
-    	        FloatControl volumeControl = (FloatControl)source.getControl( FloatControl.Type.MASTER_GAIN );
-    	        if( volumeControl != null )
-    	            return volumeControl.getValue();
-	        }
-	        catch( IllegalArgumentException e )
-	        {
-	            e.printStackTrace();
-	        }
-	    }
-	    
-	    return 0.0f;
-	}
-	
+    public int getPosition()
+    {
+        int pos = 0;
+        if( source != null )
+        {
+            pos = (int)( source.getMicrosecondPosition() / 1000 );
+        }
+        return pos;
+    }
+
+    /**
+     * Runs a short test by playing a short silent sound.
+     */
+    public void test() throws JavaLayerException
+    {
+        try
+        {
+            open( new AudioFormat( 22050, 16, 1, true, false ) );
+            short[] data = new short[22050 / 10];
+            write( data, 0, data.length );
+            flush();
+            close();
+        }
+        catch( RuntimeException ex )
+        {
+            throw new JavaLayerException( "Device test failed: " + ex );
+        }
+
+    }
+
+    /*
+     * =============================================================================
+     * ======= XXX Functions added by necessity, not present in the original code.
+     * ~Vazkii
+     * 
+     * EDIT: I've modified it again slightly. - HeavensSword
+     * =============================================================================
+     * =======
+     */
+
+    // From http://stackoverflow.com/a/2324408
+    public void setGain( float gain )
+    {
+        if( source != null )
+        {
+            try
+            {
+                FloatControl volumeControl = (FloatControl)source.getControl( FloatControl.Type.MASTER_GAIN );
+                if( volumeControl != null )
+                {
+                    float newGain = Math.min( Math.max( gain, volumeControl.getMinimum() ), volumeControl.getMaximum() );
+
+                    volumeControl.setValue( newGain );
+                }
+            }
+            catch( IllegalArgumentException e )
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public float getGain()
+    {
+        if( source != null )
+        {
+            try
+            {
+                FloatControl volumeControl = (FloatControl)source.getControl( FloatControl.Type.MASTER_GAIN );
+                if( volumeControl != null )
+                    return volumeControl.getValue();
+            }
+            catch( IllegalArgumentException e )
+            {
+                e.printStackTrace();
+            }
+        }
+
+        return 0.0f;
+    }
+
 }

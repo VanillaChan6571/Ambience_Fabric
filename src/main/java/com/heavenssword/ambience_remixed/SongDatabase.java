@@ -121,6 +121,76 @@ public final class SongDatabase
         return null;
     }
     
+    public boolean doesEventHavePlaylist( SongEvents eventKey )
+    {
+        if( eventKey != null && eventSongs.containsKey( eventKey ) )
+        {
+            String[] playlist = eventSongs.get( eventKey );
+            
+            return ( playlist != null && playlist.length > 0 );
+        }
+        
+        return false;
+    }
+    
+    public boolean doesCustomEventHavePlaylist( String eventKey )
+    {
+        if( eventKey != null && customEventSongs.containsKey( eventKey ) )
+        {
+            String[] playlist = customEventSongs.get( eventKey );
+            
+            return ( playlist != null && playlist.length > 0 );
+        }
+
+        return false;
+    }
+    
+    public boolean doesBiomeHavePlaylist( ResourceLocation biomeResource )
+    {
+        if( biomeResource != null && biomeSongs.containsKey( biomeResource ) )
+        {
+            String[] playlist = biomeSongs.get( biomeResource );
+            
+            return ( playlist != null && playlist.length > 0 );
+        }
+
+        return false;
+    }
+    
+    public boolean doesPrimaryTagSetHavePlaylist( Set<BiomeDictionary.Type> primaryTagSet )
+    {
+        if( primaryTagSet != null )
+        {
+            ArrayList<String> mergedTagPlaylist = new ArrayList<String>();            
+            for( BiomeDictionary.Type primaryTag : primaryTagSet )
+            {
+                if( primaryTag != null && primaryTagSongs.containsKey( primaryTag ) )
+                    mergedTagPlaylist.addAll( Arrays.asList( primaryTagSongs.get( primaryTag ) ) );
+            }
+                    
+            return ( !mergedTagPlaylist.isEmpty() );
+        }
+
+        return false;
+    }
+    
+    public boolean doesSecondaryTagSetHavePlaylist( Set<BiomeDictionary.Type> secondaryTagSet )
+    {
+        if( secondaryTagSet != null )
+        {
+            ArrayList<String> mergedTagPlaylist = new ArrayList<String>();            
+            for( BiomeDictionary.Type secondaryTag : secondaryTagSet )
+            {
+                if( secondaryTag != null && secondaryTagSongs.containsKey( secondaryTag ) )
+                    mergedTagPlaylist.addAll( Arrays.asList( secondaryTagSongs.get( secondaryTag ) ) );
+            }
+                    
+            return ( !mergedTagPlaylist.isEmpty() );
+        }
+
+        return false;
+    }
+       
     public void clear()
     {
         eventSongs.clear();

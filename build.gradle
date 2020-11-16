@@ -6,6 +6,7 @@ buildscript {
     }
     dependencies {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+        classpath group: 'uk.co.caprica', name: 'vlcj', version: '4.7.0'
     }
 }
 apply plugin: 'net.minecraftforge.gradle'
@@ -13,11 +14,21 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '1.0.0'
+version = '1.0'
 group = 'com.heavenssword.ambience_remixed' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'ambience_remixed'
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+configurations {
+    inJar
+}
+configurations.compile.extendsFrom(configurations.inJar)
 
 tasks.withType(JavaExec) {
     if( System.getProperty( 'DEBUG', 'false' ) == 'true' ) {
@@ -41,24 +52,6 @@ minecraft {
     // These can be tweaked, removed, or duplicated as needed.
     runs {
         client {
-            workingDirectory project.file('run')
-
-            // Recommended logging data for a userdev environment
-            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-
-            // Recommended logging level for the console
-            property 'forge.logging.console.level', 'debug'
-            
-            property 'DEBUG', 'true'
-
-            mods {
-                ambience_remixed {
-                    source sourceSets.main
-                }
-            }
-        }
-        
-        clientDebug {
             workingDirectory project.file('run')
 
             // Recommended logging data for a userdev environment
@@ -129,6 +122,7 @@ dependencies {
     // Real examples
     // compile 'com.mod-buildcraft:buildcraft:6.0.8:dev'  // adds buildcraft to the dev env
     // compile 'com.googlecode.efficient-java-matrix-library:ejml:0.24' // adds ejml to the dev env
+	compile 'uk.co.caprica:vlcj:4.7.0'
 
     // The 'provided' configuration is for optional dependencies that exist at compile-time but might not at runtime.
     // provided 'com.mod-buildcraft:buildcraft:6.0.8:dev'
@@ -139,7 +133,7 @@ dependencies {
     // For more info...
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
-
+	inJar("uk.co.caprica:vlcj:4.7.0")
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..
@@ -148,12 +142,17 @@ jar {
         attributes([
             "Specification-Title": "ambience_remixed",
             "Specification-Vendor": "HeavensSword Games LLC",
-            "Specification-Version": "1.0.0", // We are version 1 of ourselves
+            "Specification-Version": "1", // We are version 1 of ourselves
             "Implementation-Title": project.name,
             "Implementation-Version": "${version}",
             "Implementation-Vendor" :"HeavensSword Games LLC",
-            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+            "ContainedDeps": "vlcj-4.7.0.jar",
+            "ContainedDeps": "vlcj-natives-4.1.0.jar",
         ])
+    }
+    from(configurations.inJar) {
+        into 'META-INF/libraries'
     }
 }
 

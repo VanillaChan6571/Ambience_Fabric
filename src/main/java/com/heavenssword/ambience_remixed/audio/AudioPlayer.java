@@ -61,6 +61,23 @@ public abstract class AudioPlayer implements IAudioPlayer
     }
 
     @Override
+    public abstract void setVolume( float volume );
+    @Override
+    public abstract float getVolume();
+    
+    @Override
+    public float getMinVolume()
+    {
+        return 0.0f;
+    }
+    
+    @Override
+    public float getMaxVolume()
+    {
+        return 1.0f;
+    }
+    
+    @Override
     public abstract void setGain( float gain );
 
     @Override

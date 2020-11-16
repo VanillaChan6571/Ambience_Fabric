@@ -3,8 +3,10 @@ package com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.player;
 // Java
 import java.io.InputStream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 // HeavensSword
-import com.heavenssword.ambience_remixed.AmbienceRemixed;
 import com.heavenssword.ambience_remixed.audio.AudioPlayer;
 import com.heavenssword.ambience_remixed.audio.IAudioPlaybackListener;
 import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.decoder.JavaLayerException;
@@ -12,14 +14,20 @@ import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.player.advanced.
 import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.player.advanced.PlaybackEvent;
 import com.heavenssword.ambience_remixed.thirdparty.javazoom.jl.player.advanced.PlaybackListener;
 
+import net.minecraft.util.math.MathHelper;
+
 public final class JLAudioPlayer extends AudioPlayer
 {
     // Private Fields
     private AdvancedPlayer player;
     private InputStream currentInputStream;
     private JLayerPlaybackListener playbackListener = new JLayerPlaybackListener( this );
+    
+    private volatile float internalGain = 0.0f;
 
     private int pausedFrame = 0;
+    
+    private static final Logger LOGGER = LogManager.getLogger();
 
     // Public AudioPlayer Methods
     @Override
@@ -42,6 +50,9 @@ public final class JLAudioPlayer extends AudioPlayer
                     player = new AdvancedPlayer( inputStream );
                     player.setPlayBackListener( playbackListener );
                 }
+                
+                LOGGER.debug( "internalGain = " + internalGain );
+                setGain( internalGain );
 
                 currentInputStream = inputStream;
 
@@ -68,7 +79,7 @@ public final class JLAudioPlayer extends AudioPlayer
     @Override
     public void play()
     {
-        AmbienceRemixed.getLogger().debug( "JLAudioPlayer.play() - Begin Play." );
+        LOGGER.debug( "JLAudioPlayer.play() - Begin Play." );
 
         try
         {
@@ -82,6 +93,7 @@ public final class JLAudioPlayer extends AudioPlayer
                 else
                     player.play();
 
+                LOGGER.debug( "JLAudioPlayer.play() - Gain = " + getGain() );
                 isPlaying = true;
             }
         }
@@ -119,12 +131,35 @@ public final class JLAudioPlayer extends AudioPlayer
 
         isPaused = isPlaying = false;
     }
+    
+    @Override
+    public void setVolume( float volume )
+    {
+        volume = MathHelper.clamp( volume, getMinVolume(), getMaxVolume() );
+        
+        setGain( MathHelper.lerp( volume, getMinGain(), getMaxGain() ) );
+    }
+    
+    @Override
+    public float getVolume()
+    {
+        float curGain = getGain();
+        
+        float width = getMaxGain() - getMinGain();
+        float relativeGain = Math.abs( curGain - getMinGain() );
+        
+        return ( width != 0.0f ? relativeGain / Math.abs( width ) : 0.0f );
+    }
 
     @Override
     public void setGain( float gain )
     {
+        gain = MathHelper.clamp( gain, getMinGain(), getMaxGain() );
+        
         if( player != null )
         {
+            player.setInternalGain( gain );
+            
             AudioDevice device = player.getAudioDevice();
             if( device != null && device instanceof JavaSoundAudioDevice )
             {
@@ -135,6 +170,10 @@ public final class JLAudioPlayer extends AudioPlayer
                 catch( IllegalArgumentException e )
                 {
                     e.printStackTrace();
+                }
+                finally
+                {
+                    internalGain = gain;
                 }
             }
         }
@@ -148,6 +187,10 @@ public final class JLAudioPlayer extends AudioPlayer
             AudioDevice device = player.getAudioDevice();
             if( device != null && device instanceof JavaSoundAudioDevice )
                 return ( (JavaSoundAudioDevice)device ).getGain();
+            else if( device == null )
+                LOGGER.debug( "Audio device was null!");
+            else if( !(device instanceof JavaSoundAudioDevice ) )
+                LOGGER.debug( "Audio device is NOT JavaSoundAudioDevice!");
         }
 
         return 0;
@@ -211,7 +254,7 @@ public final class JLAudioPlayer extends AudioPlayer
     
     public void onPlaybackStarted( JLayerPlaybackListener.JLAudioPlayerFriend friendClassHandshake, PlaybackEvent playbackEvent )
     {
-        AmbienceRemixed.getLogger().debug( "JLAudioPlayer.onPlaybackFinished() - PlaybackStarted." );
+        LOGGER.debug( "JLAudioPlayer.onPlaybackStarted() - PlaybackStarted." );
         isPlaying = true;
         isPaused = false;
         
@@ -221,7 +264,7 @@ public final class JLAudioPlayer extends AudioPlayer
     
     public void onPlaybackFinished( JLayerPlaybackListener.JLAudioPlayerFriend friendClassHandshake, PlaybackEvent playbackEvent )
     {
-        AmbienceRemixed.getLogger().debug( "JLAudioPlayer.onPlaybackFinished() - PlaybackFinished." );
+        LOGGER.debug( "JLAudioPlayer.onPlaybackFinished() - PlaybackFinished." );
         pausedFrame = 0;
         isPaused = isPlaying = false;
         

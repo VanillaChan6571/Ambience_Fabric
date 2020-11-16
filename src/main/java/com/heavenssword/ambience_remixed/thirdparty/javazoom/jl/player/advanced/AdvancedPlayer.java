@@ -50,6 +50,8 @@ public class AdvancedPlayer
     private int lastPosition = 0;
     /** Listener for the playback process */
     private PlaybackListener listener;
+    
+    private volatile float internalGain = 0.0f;
 
     /**
      * Creates a new <code>Player</code> instance.
@@ -185,7 +187,7 @@ public class AdvancedPlayer
                 out = audio;
                 if( out != null )
                 {
-                    out.write( output.getBuffer(), 0, output.getBufferLength() );
+                    out.write( output.getBuffer(), 0, output.getBufferLength(), internalGain );
                 }
             }
 
@@ -297,5 +299,10 @@ public class AdvancedPlayer
     public Decoder getDecoder()
     {
         return decoder;
+    }
+    
+    public void setInternalGain( float gain )
+    {
+        internalGain = gain;
     }
 }

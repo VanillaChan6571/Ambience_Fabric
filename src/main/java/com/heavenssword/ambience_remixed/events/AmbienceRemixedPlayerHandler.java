@@ -135,6 +135,31 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         long time = world.getDayTime() % 24000;
         boolean isNightime = time > 13300 && time < 23200;
         
+        // Player is in/near a Village
+        int villagerCount = world.getEntitiesWithinAABB( AbstractVillagerEntity.class,
+                                                         new AxisAlignedBB( player.getPosX() - AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() - AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() - AmbienceRemixed.VILLAGE_RADIUS_Z,
+                                                                            player.getPosX() + AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() + AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() + AmbienceRemixed.VILLAGE_RADIUS_Z ) ).size();
+        if( villagerCount > AmbienceRemixed.VILLAGE_POPULATION_REQUIREMENT )
+        {
+            if( isNightime )
+            {
+                songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.MID_HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( villageAtNightStillValidCallback )
+                                                                                 .buildEventPlayRequest( SongEvents.VILLAGE_NIGHT ) );
+
+                return;
+            }
+
+            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                             .canBeOverriden( true )
+                                                                             .playlistStillValidCallback( villageStillValidCallback )
+                                                                             .buildEventPlayRequest( SongEvents.VILLAGE ) );
+
+            return;
+        }
+        //
+        
         if( world.getDimensionKey().equals( World.OVERWORLD ) )
         {
             // Player is underground
@@ -194,31 +219,6 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             }
             //
         }
-        
-        // Player is in/near a Village
-        int villagerCount = world.getEntitiesWithinAABB( AbstractVillagerEntity.class,
-                                                         new AxisAlignedBB( player.getPosX() - AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() - AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() - AmbienceRemixed.VILLAGE_RADIUS_Z,
-                                                                            player.getPosX() + AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() + AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() + AmbienceRemixed.VILLAGE_RADIUS_Z ) ).size();
-        if( villagerCount > AmbienceRemixed.VILLAGE_POPULATION_REQUIREMENT )
-        {
-            if( isNightime )
-            {
-                songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.MID_HIGH )
-                                                                                 .canBeOverriden( true )
-                                                                                 .playlistStillValidCallback( villageAtNightStillValidCallback )
-                                                                                 .buildEventPlayRequest( SongEvents.VILLAGE_NIGHT ) );
-
-                return;
-            }
-
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                             .canBeOverriden( true )
-                                                                             .playlistStillValidCallback( villageStillValidCallback )
-                                                                             .buildEventPlayRequest( SongEvents.VILLAGE ) );
-
-            return;
-        }
-        //
         
         // Custom Event POST
         event = new AmbienceRemixedEvent.PostEventCheck( world, pos );
@@ -481,7 +481,13 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             
             boolean inOverworld = world.getDimensionKey().equals( World.OVERWORLD );
             
-            return ( inOverworld && isNightime );
+            // Is the player in a village? Because VILLAGE_NIGHT should override this event then.
+            int villagerCount = world.getEntitiesWithinAABB( AbstractVillagerEntity.class,
+                                                             new AxisAlignedBB( player.getPosX() - AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() - AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() - AmbienceRemixed.VILLAGE_RADIUS_Z,
+                                                                                player.getPosX() + AmbienceRemixed.VILLAGE_RADIUS_X, player.getPosY() + AmbienceRemixed.VILLAGE_RADIUS_Y, player.getPosZ() + AmbienceRemixed.VILLAGE_RADIUS_Z ) ).size();
+            boolean isVillageNightValid = ( villagerCount > AmbienceRemixed.VILLAGE_POPULATION_REQUIREMENT ) && songDJ.canRequestEventPlaylist( SongEvents.VILLAGE_NIGHT );
+            
+            return ( inOverworld && isNightime ) && !isVillageNightValid;
         }
     }
     

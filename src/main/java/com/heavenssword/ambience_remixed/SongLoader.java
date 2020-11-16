@@ -68,7 +68,7 @@ public final class SongLoader
                         String eventKeyStr = tokens[1].toUpperCase();
                         
                         // Check to see if this is a custom event
-                        if( SongEvents.hasValue( eventKeyStr ))
+                        if( SongEvents.hasValue( eventKeyStr ) )
                         {
                             SongEvents eventKey = SongEvents.valueOf( eventKeyStr );    
                             songDB.addSongsForEvent( eventKey, props.getProperty( s ).split( "," ) );
@@ -120,6 +120,8 @@ public final class SongLoader
 
     public static InputStream loadSongStream( String songName )
     {
+        AmbienceRemixed.getLogger().debug( "SongLoader.loadSongStream() - Loading song: " + ( songName != null ? songName : "NULL" ) );
+        
         if( songName == null || songName.equals( "" ) || songName.equals( "null" ) )
             return null;
 
