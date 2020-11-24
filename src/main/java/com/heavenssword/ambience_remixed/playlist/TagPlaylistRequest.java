@@ -16,9 +16,9 @@ public final class TagPlaylistRequest extends PlaylistRequest
     private final boolean isPrimary;
     
     // Construction
-    public TagPlaylistRequest( Set<BiomeDictionary.Type> _tagSet, boolean _isPrimary, PlayPriority _playPriority, boolean _canBeOverriden, boolean _shouldLoop, boolean _shouldDeferPlay, boolean _shouldAllowMerging, IPlaylistStillValidCallback _playListStillValidCallback )
+    public TagPlaylistRequest( Set<BiomeDictionary.Type> _tagSet, boolean _isPrimary, PlayPriority _playPriority, Double _fadeTime, boolean _canBeOverriden, boolean _shouldLoop, boolean _shouldDeferPlay, boolean _shouldAllowMerging, IPlaylistStillValidCallback _playListStillValidCallback )
     {
-        super( _playPriority, _canBeOverriden, _shouldLoop, _shouldDeferPlay, _shouldAllowMerging, _playListStillValidCallback );
+        super( _playPriority, _fadeTime, _canBeOverriden, _shouldLoop, _shouldDeferPlay, _shouldAllowMerging, _playListStillValidCallback );
         
         tagSet = _tagSet;
         isPrimary = _isPrimary;

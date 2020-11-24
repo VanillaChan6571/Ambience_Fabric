@@ -11,6 +11,7 @@ import com.heavenssword.ambience_remixed.playlist.IPlaylistRequest;
 import com.heavenssword.ambience_remixed.playlist.TagPlaylistRequest;
 
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.common.BiomeDictionary;
 
 import java.util.Set;
@@ -25,6 +26,10 @@ public class SongDJ implements IAudioPlaybackListener
     
     private IPlaylistRequest activePlaylistRequest = null;
     
+    private final float requestCooldownTime = 1.5f;// seconds
+    private final float biomeRequestCooldownTime = 15f;// seconds
+    private float requestCooldownTimer = 0.0f;
+    
     // Construction
     public SongDJ( JukeboxRunnable _jukebox, SongDatabase _songDB )
     {
@@ -36,6 +41,12 @@ public class SongDJ implements IAudioPlaybackListener
     }
     
     // Public Methods
+    public void tick( double deltaTime )
+    {
+        if( requestCooldownTimer > 0.0f )
+            requestCooldownTimer = MathHelper.clamp( requestCooldownTimer - (float)deltaTime, 0.0f, requestCooldownTime);
+    }
+    
     public boolean canRequestEventPlaylist( SongEvents eventKey )
     {
         if( songDB != null )
@@ -118,7 +129,7 @@ public class SongDJ implements IAudioPlaybackListener
             if( playlistRequest.getPlaylist() == null )
                 return false;
             
-            AmbienceRemixed.getLogger().debug( "SongDJ.requestPlaylistForCustomEvent() - Reqesting playlist for customEvent \"" + playlistRequest.getEventName() + "\"" );
+            //AmbienceRemixed.getLogger().debug( "SongDJ.requestPlaylistForCustomEvent() - Reqesting playlist for customEvent \"" + playlistRequest.getEventName() + "\"" );
             requestPlaylist( playlistRequest );
             
             retValue = true;
@@ -189,20 +200,27 @@ public class SongDJ implements IAudioPlaybackListener
         if( playlistRequest == null || playlistRequest.getPlaylist() == null )
             return;
         
-        activePlaylistRequest = playlistRequest;
-        
-        if( jukebox != null && activePlaylistRequest.getPlaylist() != null )
+        if( jukebox != null )
         {
+            requestCooldownTimer = ( playlistRequest instanceof BiomePlaylistRequest || playlistRequest instanceof TagPlaylistRequest ) ? biomeRequestCooldownTime : requestCooldownTime;
+            
+            boolean isActiveSongIncludedInNewList = playlistRequest.getPlaylist().contains( jukebox.getCurrentSongName() );
+        
+            activePlaylistRequest = playlistRequest;
+            
             jukebox.setPlaylist( activePlaylistRequest.getPlaylist().toArray( new String[0] ) );
             jukebox.setIsPlaylistLoopingEnabled( activePlaylistRequest.getShouldLoop() );
             
-            if( !playlistRequest.getShouldDeferPlay() )
-                jukebox.playNextSong();
+            if( !playlistRequest.getShouldDeferPlay() && !isActiveSongIncludedInNewList )
+                jukebox.playNextSong( activePlaylistRequest.getFadeTime() );
         }
     }
     
     private boolean shouldReplaceActivePlaylistRequest( IPlaylistRequest newPlayListRequest )
     {
+        if( requestCooldownTimer > 0.0f )
+            return false;
+        
         //AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - playPriority val = \"" + newPlayListRequest.getPlayPriority().Value + "\"" );
         if( activePlaylistRequest != null )
         {
@@ -215,9 +233,13 @@ public class SongDJ implements IAudioPlaybackListener
             if( activePlaylistRequest.getCanBeOverriden() )
                 isActivePlaylistStillValid = activePlaylistRequest.isPlaylistStillValid();
             
+            boolean isNothingPlaying = true;
+            if( jukebox != null )
+                isNothingPlaying = ( jukebox.getCurrentSongName() == null || !jukebox.isPlaying() ) && !jukebox.getIsPlaylistLoopingEnabled();
+            
             //AmbienceRemixed.getLogger().debug( "SongDJ.shouldReplaceActivePlaylistRequest() - isHigherPriority = " + ( isHigherPriority ? "TRUE" : "FALSE" ) + " isActivePlaylistStillValid = " + ( isActivePlaylistStillValid ? "TRUE" : "FALSE" ) );
             
-            return ( isHigherPriority || !isActivePlaylistStillValid );
+            return ( isHigherPriority || !isActivePlaylistStillValid || isNothingPlaying );
         }
         
         return true;

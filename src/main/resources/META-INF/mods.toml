@@ -50,6 +50,6 @@ Fully customize a dynamic soundtrack for Minecraft with your own music.
 [[dependencies.ambience_remixed]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.16.3]"
+    versionRange="[1.16.4]"
     ordering="NONE"
     side="BOTH"

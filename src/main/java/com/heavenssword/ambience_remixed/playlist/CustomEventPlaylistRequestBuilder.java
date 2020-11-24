@@ -8,6 +8,6 @@ public final class CustomEventPlaylistRequestBuilder extends PlaylistRequestBuil
     // Public Methods
     public CustomEventPlaylistRequest buildCustomEventPlayRequest( String _eventName )
     {
-        return new CustomEventPlaylistRequest( _eventName, playPriority, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
+        return new CustomEventPlaylistRequest( _eventName, playPriority, fadeTime, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
     }
 }

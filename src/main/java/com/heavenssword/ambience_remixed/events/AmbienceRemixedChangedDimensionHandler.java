@@ -27,14 +27,14 @@ public class AmbienceRemixedChangedDimensionHandler extends AmbienceRemixedEvent
     @SubscribeEvent
     public void onChangedDimensionHandler( PlayerEvent.PlayerChangedDimensionEvent changedDimensionEvent )
     {
-        AmbienceRemixed.getLogger().debug( "AmbienceRemixedChangedDimensionHandler.OnChangedDimensionHandler() - Begin." );
+        //AmbienceRemixed.getLogger().debug( "AmbienceRemixedChangedDimensionHandler.OnChangedDimensionHandler() - Begin." );
         
         if( changedDimensionEvent == null || songDJ == null )
             return;
         
         currentWorldLoaded = changedDimensionEvent.getTo();
         
-        AmbienceRemixed.getLogger().debug( "AmbienceRemixedChangedDimensionHandler.OnChangedDimensionHandler() - newDimension = " + currentWorldLoaded.toString() );
+        //AmbienceRemixed.getLogger().debug( "AmbienceRemixedChangedDimensionHandler.OnChangedDimensionHandler() - newDimension = " + currentWorldLoaded.toString() );
         if( currentWorldLoaded.equals( World.THE_NETHER ) )
         {
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )

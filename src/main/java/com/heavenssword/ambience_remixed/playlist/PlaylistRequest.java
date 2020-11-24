@@ -13,15 +13,17 @@ public class PlaylistRequest implements IPlaylistRequest
     protected final boolean shouldLoop;
     protected final boolean shouldDeferPlay;
     protected final boolean shouldAllowMerging;
+    protected final Double fadeTime;
     
     protected final IPlaylistStillValidCallback playlistStillValidCallback;
     
     protected ArrayList<String> playlist = null;
     
     // Construction    
-    public PlaylistRequest( PlayPriority _playPriority, boolean _canBeOverriden, boolean _shouldLoop, boolean _shouldDeferPlay, boolean _shouldAllowMerging, IPlaylistStillValidCallback _playlistStillValidCallback ) 
+    public PlaylistRequest( PlayPriority _playPriority, Double _fadeTime, boolean _canBeOverriden, boolean _shouldLoop, boolean _shouldDeferPlay, boolean _shouldAllowMerging, IPlaylistStillValidCallback _playlistStillValidCallback ) 
     { 
         playPriority = _playPriority;
+        fadeTime = _fadeTime;
         canBeOverriden = _canBeOverriden;
         shouldLoop = _shouldLoop;
         shouldDeferPlay = _shouldDeferPlay;
@@ -34,6 +36,12 @@ public class PlaylistRequest implements IPlaylistRequest
     public PlayPriority getPlayPriority()
     {
         return playPriority;
+    }
+    
+    @Override
+    public Double getFadeTime()
+    {
+        return fadeTime;
     }
     
     @Override

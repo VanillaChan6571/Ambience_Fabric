@@ -51,7 +51,7 @@ public final class JLAudioPlayer extends AudioPlayer
                     player.setPlayBackListener( playbackListener );
                 }
                 
-                LOGGER.debug( "internalGain = " + internalGain );
+                //LOGGER.debug( "internalGain = " + internalGain );
                 setGain( internalGain );
 
                 currentInputStream = inputStream;
@@ -79,7 +79,7 @@ public final class JLAudioPlayer extends AudioPlayer
     @Override
     public void play()
     {
-        LOGGER.debug( "JLAudioPlayer.play() - Begin Play." );
+        //LOGGER.debug( "JLAudioPlayer.play() - Begin Play." );
 
         try
         {
@@ -93,7 +93,7 @@ public final class JLAudioPlayer extends AudioPlayer
                 else
                     player.play();
 
-                LOGGER.debug( "JLAudioPlayer.play() - Gain = " + getGain() );
+                //LOGGER.debug( "JLAudioPlayer.play() - Gain = " + getGain() );
                 isPlaying = true;
             }
         }
@@ -187,10 +187,10 @@ public final class JLAudioPlayer extends AudioPlayer
             AudioDevice device = player.getAudioDevice();
             if( device != null && device instanceof JavaSoundAudioDevice )
                 return ( (JavaSoundAudioDevice)device ).getGain();
-            else if( device == null )
+            /*else if( device == null )
                 LOGGER.debug( "Audio device was null!");
             else if( !(device instanceof JavaSoundAudioDevice ) )
-                LOGGER.debug( "Audio device is NOT JavaSoundAudioDevice!");
+                LOGGER.debug( "Audio device is NOT JavaSoundAudioDevice!");*/
         }
 
         return 0;

@@ -83,11 +83,11 @@ public final class SongLoader
                         
                         if( biome != null )
                         {
-                            AmbienceRemixed.getLogger().debug( "SongLoader.LoadFrom() - Biome for \"" + biomeName + "\" = " + biome.toString() );
+                            //AmbienceRemixed.getLogger().debug( "SongLoader.LoadFrom() - Biome for \"" + biomeName + "\" = " + biome.toString() );
                             songDB.addSongsForBiome( biome.getRegistryName(), props.getProperty( s ).split( "," ) );
                         }
-                        else
-                            AmbienceRemixed.getLogger().debug( "SongLoader.LoadFrom() - Biome was NULL!" );
+                        //else
+                        //    AmbienceRemixed.getLogger().debug( "SongLoader.LoadFrom() - Biome was NULL!" );
                     }
                     else if( keyType.matches( "primarytag|secondarytag" ) )
                     {
@@ -120,7 +120,7 @@ public final class SongLoader
 
     public static InputStream loadSongStream( String songName )
     {
-        AmbienceRemixed.getLogger().debug( "SongLoader.loadSongStream() - Loading song: " + ( songName != null ? songName : "NULL" ) );
+        //AmbienceRemixed.getLogger().debug( "SongLoader.loadSongStream() - Loading song: " + ( songName != null ? songName : "NULL" ) );
         
         if( songName == null || songName.equals( "" ) || songName.equals( "null" ) )
             return null;

@@ -8,6 +8,7 @@ public class PlaylistRequestBuilder<T extends PlaylistRequestBuilder<T>>
 {
     // Protected Fields
     protected PlayPriority playPriority = PlayPriority.MEDIUM;
+    protected Double fadeTime = null;
     protected boolean canBeOverriden = false;
     protected boolean shouldLoop = true;
     protected boolean shouldDeferPlay = false;
@@ -21,12 +22,19 @@ public class PlaylistRequestBuilder<T extends PlaylistRequestBuilder<T>>
     // Public Methods
     public PlaylistRequest buildPlayRequest()
     {
-        return new PlaylistRequest( playPriority, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
+        return new PlaylistRequest( playPriority, fadeTime, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
     }
     
     public T playPriority( PlayPriority _playPriority )
     {
         playPriority = _playPriority;
+        
+        return (T)this;
+    }
+    
+    public T fadeTime( Double _fadeTime )
+    {
+        fadeTime = _fadeTime;
         
         return (T)this;
     }

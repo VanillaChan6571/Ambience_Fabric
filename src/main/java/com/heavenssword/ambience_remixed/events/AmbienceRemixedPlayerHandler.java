@@ -11,18 +11,18 @@ import net.minecraft.entity.merchant.villager.AbstractVillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+
+// MinecraftForge
 import net.minecraftforge.common.BiomeDictionary;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
-
-// MinecraftForge
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
-import net.minecraftforge.event.entity.player.PlayerWakeUpEvent;
+//import net.minecraftforge.event.entity.player.PlayerWakeUpEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 // Ambience Remixed
@@ -86,24 +86,27 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         // Player is Dying
         if( player.getHealth() < 7.0f )
         {
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                             .canBeOverriden( true )
-                                                                             .playlistStillValidCallback( dyingStillValidCallback )
-                                                                             .buildEventPlayRequest( SongEvents.DYING ) );
-            
-            return;
+            if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( dyingStillValidCallback )
+                                                                                 .fadeTime( 0.25 )
+                                                                                 .buildEventPlayRequest( SongEvents.DYING ) ) )
+            {
+                return;
+            }
         }
         //
         
         // Player is Fishing
         if( player.fishingBobber != null )
         {
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                             .canBeOverriden( true )
-                                                                             .playlistStillValidCallback( fishingStillValidCallback )
-                                                                             .buildEventPlayRequest( SongEvents.FISHING ) );
-
-            return;
+            if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( fishingStillValidCallback )
+                                                                                 .buildEventPlayRequest( SongEvents.FISHING ) ) )
+            {
+                return;
+            }
         }
         //
         
@@ -111,24 +114,26 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         ItemStack headItem = player.getItemStackFromSlot( EquipmentSlotType.HEAD );
         if( headItem != null && headItem.getItem().equals( Blocks.PUMPKIN.asItem() ) )
         {
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                             .canBeOverriden( true )
-                                                                             .playlistStillValidCallback( pumpkinHeadStillValidCallback )
-                                                                             .buildEventPlayRequest( SongEvents.WEARING_PUMPKIN_HEAD ) );
-
-            return;
+            if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( pumpkinHeadStillValidCallback )
+                                                                                 .buildEventPlayRequest( SongEvents.WEARING_PUMPKIN_HEAD ) ) )
+            {
+                return;
+            }
         }
         //
         
         // Player is underwater
-        if( player.isInWater() )
+        if( player.areEyesInFluid( FluidTags.WATER ) )
         {
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                             .canBeOverriden( true )
-                                                                             .playlistStillValidCallback( underwaterStillValidCallback )
-                                                                             .buildEventPlayRequest( SongEvents.UNDERWATER ) );
-
-            return;
+            if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( underwaterStillValidCallback )
+                                                                                 .buildEventPlayRequest( SongEvents.UNDERWATER ) ) )
+            {
+                return;
+            }
         }
         //
         
@@ -143,20 +148,22 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         {
             if( isNightime )
             {
-                songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.MID_HIGH )
-                                                                                 .canBeOverriden( true )
-                                                                                 .playlistStillValidCallback( villageAtNightStillValidCallback )
-                                                                                 .buildEventPlayRequest( SongEvents.VILLAGE_NIGHT ) );
-
-                return;
+                if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.MID_HIGH )
+                                                                                     .canBeOverriden( true )
+                                                                                     .playlistStillValidCallback( villageAtNightStillValidCallback )
+                                                                                     .buildEventPlayRequest( SongEvents.VILLAGE_NIGHT ) ) )
+                {
+                    return;
+                }
             }
 
-            songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                             .canBeOverriden( true )
-                                                                             .playlistStillValidCallback( villageStillValidCallback )
-                                                                             .buildEventPlayRequest( SongEvents.VILLAGE ) );
-
-            return;
+            if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( villageStillValidCallback )
+                                                                                 .buildEventPlayRequest( SongEvents.VILLAGE ) ) )
+            {
+                return;
+            }
         }
         //
         
@@ -165,57 +172,72 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             // Player is underground
             if( !world.canSeeSky( pos ) )
             {   // Deep underground
-                if( pos.getY() < AmbienceRemixed.UNDERGROUND_HEIGHT )
+                if( pos.getY() < AmbienceRemixed.DEEP_UNDERGROUND_HEIGHT )
                 {
-                    songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                                     .canBeOverriden( true )
-                                                                                     .playlistStillValidCallback( undergroundStillValidCallback )
-                                                                                     .buildEventPlayRequest( SongEvents.DEEP_UNDERGROUND ) );
-
-                    return;
+                    if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                         .canBeOverriden( true )
+                                                                                         .playlistStillValidCallback( undergroundStillValidCallback )
+                                                                                         .buildEventPlayRequest( SongEvents.DEEP_UNDERGROUND ) ) )
+                    {
+                        return;
+                    }
                 }
-                else if( pos.getY() < AmbienceRemixed.DEEP_UNDERGROUND_HEIGHT )
+                else if( pos.getY() < AmbienceRemixed.UNDERGROUND_HEIGHT )
                 {
-                    songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                                     .canBeOverriden( true )
-                                                                                     .playlistStillValidCallback( deepUndergroundStillValidCallback )
-                                                                                     .buildEventPlayRequest( SongEvents.UNDERGROUND ) );
-
-                    return;
+                    if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                         .canBeOverriden( true )
+                                                                                         .playlistStillValidCallback( deepUndergroundStillValidCallback )
+                                                                                         .buildEventPlayRequest( SongEvents.UNDERGROUND ) ) )
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                         .canBeOverriden( true )
+                                                                                         .playlistStillValidCallback( deepUndergroundStillValidCallback )
+                                                                                         .buildEventPlayRequest( SongEvents.CAVE ) ) )
+                    {
+                        return;
+                    }
                 }
             }// It's raining outside.
             else if( world.isRaining() )
             {
-                songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                                 .canBeOverriden( true )
-                                                                                 .playlistStillValidCallback( rainingStillValidCallback )
-                                                                                 .buildEventPlayRequest( SongEvents.RAIN ) );
-
-                return;
+                if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                     .canBeOverriden( true )
+                                                                                     .playlistStillValidCallback( rainingStillValidCallback )
+                                                                                     .buildEventPlayRequest( SongEvents.RAIN ) ) )
+                {
+                    return;
+                }
             }
             //
 
             // Player is at a high altitude
             if( pos.getY() > AmbienceRemixed.HIGH_ALITUDE_HEIGHT )
             {
-                songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                                 .canBeOverriden( true )
-                                                                                 .playlistStillValidCallback( highAlitudeStillValidCallback )
-                                                                                 .buildEventPlayRequest( SongEvents.HIGH_ALTITUDE ) );
-
-                return;
+                if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                     .canBeOverriden( true )
+                                                                                     .playlistStillValidCallback( highAlitudeStillValidCallback )
+                                                                                     .buildEventPlayRequest( SongEvents.HIGH_ALTITUDE ) ) )
+                {
+                    return;
+                }
             }
             //
 
             // It's nightime
             if( isNightime )
             {
-                songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                                 .canBeOverriden( true )
-                                                                                 .playlistStillValidCallback( nightimeStillValidCallback )
-                                                                                 .buildEventPlayRequest( SongEvents.NIGHT ) );
-
-                return;
+                if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                     .canBeOverriden( true )
+                                                                                     .playlistStillValidCallback( nightimeStillValidCallback )
+                                                                                     .buildEventPlayRequest( SongEvents.NIGHT ) ) )
+                {
+                    return;
+                }
             }
             //
         }
@@ -227,10 +249,11 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         customEventName = event.getEventName();
         if( customEventName != null && customEventName != "" )
         {
-            songDJ.requestPlaylistForCustomEvent( new CustomEventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
-                                                                                         .buildCustomEventPlayRequest( customEventName ) );
-            
-            return;
+            if( songDJ.requestPlaylistForCustomEvent( new CustomEventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                             .buildCustomEventPlayRequest( customEventName ) ) )
+            {
+                return;
+            }
         }
         //
         
@@ -272,49 +295,58 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             return;
         }
         //
+        
+        // Fallback playlist if nothing else
+        songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.LOWEST )
+                                        .shouldDeferPlay( true )
+                                        .buildEventPlayRequest( SongEvents.GENERIC ) );
+        //
     }
     
     @SubscribeEvent
     public void onPlayerSleep( PlayerSleepInBedEvent playerSleepEvent )
     {
-        AmbienceRemixed.getLogger().debug( "AmbienceRemixedPlayerHandler.OnPlayerSleep() - Begin." );
+        //AmbienceRemixed.getLogger().debug( "AmbienceRemixedPlayerHandler.OnPlayerSleep() - Begin." );
         
         if( playerSleepEvent == null || songDJ == null )
             return;
-        
+
         // We only care about the local user
         PlayerEntity player = playerSleepEvent.getPlayer();
-        if( !player.isUser() )
-            return;
-        
+        //AmbienceRemixed.getLogger().debug( "AmbienceRemixedPlayerHandler.OnPlayerSleep() - Player is User = " + player.isUser() ? "TRUE" : "FALSE" );
+        //if( !player.isUser() )// This check is failing for some reason. This is always a ServerPlayer instance?
+        //    return;
+                
         // Make sure the player can actually sleep.
         if( player != null && !player.world.isDaytime() )
         {
+            //AmbienceRemixed.getLogger().debug( "AmbienceRemixedPlayerHandler.OnPlayerSleep() - Appropriate sleep time. RequestingPlaylist." );
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGHEST )
                                                                              .shouldLoop( false )
+                                                                             .fadeTime( 0.0 )
                                                                              .buildEventPlayRequest( SongEvents.SLEEPING ) );
         }
     }
     
-    @SubscribeEvent
+    /*@SubscribeEvent
     public void onPlayerWakeUp( PlayerWakeUpEvent playerWakeUpEvent )
     {
-        AmbienceRemixed.getLogger().debug( "AmbienceRemixedPlayerHandler.onPlayerWakeUp() - Begin." );
+        //AmbienceRemixed.getLogger().debug( "AmbienceRemixedPlayerHandler.onPlayerWakeUp() - Begin." );
         
         if( playerWakeUpEvent == null || songDJ == null )
             return;
         
         // We only care about the local user
-        PlayerEntity player = playerWakeUpEvent.getPlayer();
-        if( !player.isUser() )
-            return;
+        //PlayerEntity player = playerWakeUpEvent.getPlayer();
+        //if( !player.isUser() )
+        //    return;
         
         songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.LOWEST )
                                                                          .shouldDeferPlay( true )
                                                                          .buildEventPlayRequest( SongEvents.GENERIC ) );
-    }
+    }*/
     
-    @SubscribeEvent
+    /*@SubscribeEvent
     public void onPlayerRespawn( PlayerEvent.PlayerRespawnEvent playerRespawnEvent )    
     {
         AmbienceRemixed.getLogger().debug( "AmbienceRemixedPlayerHandler.OnPlayerRespawn() - Begin." );
@@ -329,7 +361,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         
         songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.LOWEST )
                                                                          .buildEventPlayRequest( SongEvents.GENERIC ) );
-    }
+    }*/
     
     // Callback Classes
     public final class DyingStillValid implements IPlaylistStillValidCallback
@@ -380,7 +412,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
             
-            return ( player != null ? player.isInWater() : false );
+            return ( player != null ? player.areEyesInFluid( FluidTags.WATER ) : false );
         }        
     }
     

@@ -11,6 +11,6 @@ public final class BiomePlaylistRequestBuilder extends PlaylistRequestBuilder<Bi
     // Public Methods
     public BiomePlaylistRequest buildBiomePlayRequest( ResourceLocation _biomeRegistry )
     {
-        return new BiomePlaylistRequest( _biomeRegistry, playPriority, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
+        return new BiomePlaylistRequest( _biomeRegistry, playPriority, fadeTime, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
     }
 }

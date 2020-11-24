@@ -11,6 +11,6 @@ public final class EventPlaylistRequestBuilder extends PlaylistRequestBuilder<Ev
     // Public Methods
     public EventPlaylistRequest buildEventPlayRequest( SongEvents _songEvent )
     {
-        return new EventPlaylistRequest( _songEvent, playPriority, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
+        return new EventPlaylistRequest( _songEvent, playPriority, fadeTime, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
     }
 }

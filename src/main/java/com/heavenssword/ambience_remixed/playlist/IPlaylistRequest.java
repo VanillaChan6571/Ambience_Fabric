@@ -14,6 +14,7 @@ public interface IPlaylistRequest
     public boolean getShouldAllowMerging();    
     public boolean isPlaylistStillValid();
     public boolean getShouldDeferPlay();
+    public Double getFadeTime();
     
     public ArrayList<String> getPlaylist();    
     public void setPlaylist( String[] newPlaylist );    

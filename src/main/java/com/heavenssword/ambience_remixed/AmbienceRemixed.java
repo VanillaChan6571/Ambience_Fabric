@@ -2,11 +2,13 @@ package com.heavenssword.ambience_remixed;
 
 // Java
 import java.io.File;
+
+// Log4J
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import net.minecraft.client.GameSettings;
 // Minecraft
+import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.MusicTicker;
 import net.minecraft.util.FrameTimer;
@@ -125,6 +127,79 @@ public class AmbienceRemixed
             eventHub.RegisterHandlers( MinecraftForge.EVENT_BUS );
         }
     }
+    
+    /*boolean setupPlayer = false;
+    @SubscribeEvent
+    public void onServerTick( ServerTickEvent event )
+    {
+        if( !setupPlayer )
+        {            
+            Minecraft mc = Minecraft.getInstance();
+            
+            if( mc.world == null || mc.world.getServer() == null )
+                return;
+            
+            ServerPlayerEntity player = mc.world.getServer().getPlayerList().getPlayerByUsername( "HeavensSword" );
+            LOGGER.debug( "Player Dev is :" + ( player != null ? "IsValid" : "NULL" ) );
+            
+            if( player == null )
+                return;
+            
+            LOGGER.debug( "Adding items." );
+            
+            player.addExperienceLevel( 26 );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.MELON_SLICE, 64 ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.MELON_SLICE, 64 ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.DIRT, 40 ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.SAND, 64 ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.SAND, 64 ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.COBBLESTONE, 64 ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.COBBLESTONE, 64 ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.COBBLESTONE_STAIRS, 64 ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.COMPASS ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.SHEARS ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.TORCH, 64 ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.STICK, 64 ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.STRING, 32 ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_SWORD ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_SWORD ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_SWORD ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.BOW ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.CROSSBOW ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.ARROW, 32 ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_HELMET ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_HELMET ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_CHESTPLATE ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_CHESTPLATE ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_LEGGINGS ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_LEGGINGS ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_BOOTS ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_BOOTS ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.SHIELD ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.SHIELD ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.SHIELD ) );
+            
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_AXE ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_HOE ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_SHOVEL ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_PICKAXE ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_PICKAXE ) );
+            player.inventory.addItemStackToInventory( new ItemStack( Items.IRON_PICKAXE ) );
+            
+            setupPlayer = true;
+        }
+    }*/
 
     @SubscribeEvent
     public void onTick( ClientTickEvent event )
@@ -137,8 +212,13 @@ public class AmbienceRemixed
             case START:
                 updateFromGameVolume();
             break;
-            case END:    
+            case END:
+            {
+                if( songDJ != null )
+                    songDJ.tick( DeltaTime );
+                
                 DeltaTime = (double)frameTimer.getFrames()[ frameTimer.getIndex() ] * 0.000000001;// Convert from ns to s
+            }
             break;
         }
     }

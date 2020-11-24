@@ -26,7 +26,7 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
     private AtomicBoolean isPlaylistShuffleEnabled = new AtomicBoolean( true );
     private AtomicBoolean isPlaylistLoopingEnabled = new AtomicBoolean( true );
         
-    private AtomicDouble currentFadeValue = new AtomicDouble( 1.0 );
+    private volatile float currentFadeValue = 1.0f;
     private AtomicDouble currentFadeLerp = new AtomicDouble( 0.0 );
     
     private volatile int currentSongIdx = -1;
@@ -41,7 +41,7 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
     
     private Random rand = new Random();
     
-    private final double fadeTime = 10.0f;
+    private final double fadeTime = 1.5f;
     
     // Construction
     public JukeboxRunnable( IAudioPlayer _audioPlayer )
@@ -123,11 +123,11 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
                     clearCurrentStream();
                     
                     InputStream stream = SongLoader.loadSongStream( currentSong );
-                    LOGGER.debug( "JukeboxRunnable.Run() - LoadedStream" );
+                    //LOGGER.debug( "JukeboxRunnable.Run() - LoadedStream" );
                     if( stream == null )
                         continue;
 
-                    LOGGER.debug( "JukeboxRunnable.Run() - Setting and playing Stream." );
+                    //LOGGER.debug( "JukeboxRunnable.Run() - Setting and playing Stream." );
                     audioPlayer.setStream( stream );
                     audioPlayer.play();
                 }
@@ -142,12 +142,16 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
     @Override
     public void onPlaybackStarted()
     {
+        Double oldThreadFadeTime = null;
         if( fadeThread != null )
+        {
+            oldThreadFadeTime = fadeThread.getFadeTime();
             fadeThread.forceKill();
+        }
         
         // Fade the track in
-        fadeThread = new FaderThread( false );
-        fadeThread.SetFadeCompleteListener( this );
+        fadeThread = new FaderThread( false, ( oldThreadFadeTime == null ? fadeTime : oldThreadFadeTime ) );
+        fadeThread.setFadeCompleteListener( this );
         fadeThread.start();
     }
     
@@ -165,11 +169,14 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
     public void onFadeComplete( boolean wasFadingOut )
     {
         if( fadeThread != null )
-            fadeThread.ClearFadeCompleteListener();   
+            fadeThread.clearFadeCompleteListener();   
         
         if( wasFadingOut )
         {
             LOGGER.debug( "onFadeComplete() - Fade Out Complete." );
+            
+            clearCurrentStream();
+            
             isQueued.set( true );
         }
         else
@@ -224,13 +231,18 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
     }
 
     public void playNextSong()
+    {
+        playNextSong( null );
+    }
+    
+    public void playNextSong( Double fadeOverrideTime )
     {        
         if( currentPlaylist.isEmpty() )
         {
             if( currentSong == null || currentSong.equals( "" ) )
                 resetPlayer();
             else
-                play( currentSong );
+                play( currentSong, fadeOverrideTime );
         }
         else
         {
@@ -242,26 +254,31 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
                 currentSongIdx = 0;
                 
                 // We've played the last song in the playlist, do we loop?
-                LOGGER.debug( "JukeboxRunnable.playNextSong() - ShouldLoop = " + ( isPlaylistLoopingEnabled.get() ? "TRUE" : "FALSE" ) );
+                //LOGGER.debug( "JukeboxRunnable.playNextSong() - ShouldLoop = " + ( isPlaylistLoopingEnabled.get() ? "TRUE" : "FALSE" ) );
                 
                 if( !isPlaylistLoopingEnabled.get() )
                     return;
             }
             
-            LOGGER.debug( "JukeboxRunnable.playNextSong() - currentSongIdx = " + currentSongIdx );
+            //LOGGER.debug( "JukeboxRunnable.playNextSong() - currentSongIdx = " + currentSongIdx );
             
-            play( currentPlaylist.get( currentSongIdx ) );
+            play( currentPlaylist.get( currentSongIdx ), fadeOverrideTime );
         }
     }
     
     public void playPreviousSong()
+    {
+        playPreviousSong( null );
+    }
+    
+    public void playPreviousSong( Double fadeOverrideTime )
     {
         if( currentPlaylist.isEmpty() )
         {
             if( currentSong == null || currentSong.equals( "" ) )
                 resetPlayer();
             else
-                play( currentSong );
+                play( currentSong, fadeOverrideTime );
         }
         else
         {
@@ -271,13 +288,13 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
             if( currentSongIdx < 0 )
                 currentSongIdx = currentPlaylist.size() - 1;
             
-            play( currentPlaylist.get( currentSongIdx ) );
+            play( currentPlaylist.get( currentSongIdx ), fadeOverrideTime );
         }
     }
 
     public synchronized void resetPlayer()
     {
-        LOGGER.debug( "JukeboxRunnable.resetPlayer() - resetPlayer called." );
+        //LOGGER.debug( "JukeboxRunnable.resetPlayer() - resetPlayer called." );
         if( audioPlayer != null )
             audioPlayer.clearStream();
 
@@ -286,7 +303,7 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
     
     public synchronized void cleanup()
     {
-        LOGGER.debug( "JukeboxRunnable.cleanup() - Cleanup called." );
+        //LOGGER.debug( "JukeboxRunnable.cleanup() - Cleanup called." );
         if( audioPlayer != null )
             audioPlayer.cleanup();
         audioPlayer = null;        
@@ -307,26 +324,37 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
 
     public synchronized void play( String song )
     {
-        LOGGER.debug( "JukeboxRunnable.play() - Attempted to play song : \"" + ( song == null ? "NULL" : song ) + "\"" );
-        LOGGER.debug( "JukeboxRunnable.play() - CurrentSong = \"" + ( currentSong == null ? "NULL" : currentSong ) + "\"" );
+        play( song, null );
+    }
+    
+    public synchronized void play( String song, Double _fadeOverrideTime )
+    {
+        //LOGGER.debug( "JukeboxRunnable.play() - Attempted to play song : \"" + ( song == null ? "NULL" : song ) + "\"" );
+        //LOGGER.debug( "JukeboxRunnable.play() - CurrentSong = \"" + ( currentSong == null ? "NULL" : currentSong ) + "\"" );
         
         if( audioPlayer == null || ( audioPlayer.isPlaying() && ( currentSong != null && currentSong.equals( song ) ) ) )
             return;
         
-        resetPlayer();
-
         currentSong = song;
-        
-        currentFadeValue.set( 1.0 );
+
+        currentFadeValue = 1.0f;
         currentFadeLerp.set( 0.0 );
         
         if( fadeThread != null )
             fadeThread.forceKill();
         
-        // Fade the current track out
-        fadeThread = new FaderThread( true );
-        fadeThread.SetFadeCompleteListener( this );
-        fadeThread.start();
+        // Fade the current track out if there's one playing
+        if( audioPlayer.isPlaying() )
+        {
+            fadeThread = new FaderThread( true, ( _fadeOverrideTime == null ? fadeTime : _fadeOverrideTime ) );
+            fadeThread.setFadeCompleteListener( this );
+            fadeThread.start();
+        }
+        else
+        {
+            currentFadeValue = 0.0f;
+            onFadeComplete( true );
+        }
     }
     
     public synchronized void setVolume( float volume )
@@ -334,7 +362,7 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
         if( audioPlayer == null )
             return;
 
-        audioPlayer.setVolume( volume * (float)currentFadeValue.get() );
+        audioPlayer.setVolume( volume * currentFadeValue );
         
         // If the game volume was turned all the way down, just stop the player to save resources.
         if( volume <= 0.0f )
@@ -361,15 +389,10 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
         }
     }
     
-    private synchronized void updateVolume()
-    {
-        setVolume( getVolume() );
-    }
-    
     // Private Methods    
     private void clearCurrentStream()
     {
-        LOGGER.debug( "JukeboxRunnable.clearCurrentStream() - ClearingCurrentStream" );
+        //LOGGER.debug( "JukeboxRunnable.clearCurrentStream() - ClearingCurrentStream" );
         if( audioPlayer != null )
             audioPlayer.clearStream();
     }
@@ -379,26 +402,29 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
     {
         // Private Fields
         private final boolean isFadingOut;
+        private final double fadeTime;
         private IFadeCompleteListener fadeCompleteListener = null;
         
         private AtomicBoolean shouldKill = new AtomicBoolean( false );
         
-        private long currentTime = 0;
-        private long lastTime = 0;
-        private double deltaTime = 0.0;
-        
         // Construction
-        public FaderThread( boolean _isFadingOut )
+        public FaderThread( boolean _isFadingOut, double _fadeTime )
         {
             isFadingOut = _isFadingOut;
+            fadeTime = ( ( _fadeTime <= 0.0f ) ? 0.001 : _fadeTime );
         }
         
-        public void SetFadeCompleteListener( IFadeCompleteListener _fadeCompleteListener )
+        public Double getFadeTime()
+        {
+            return fadeTime;
+        }
+        
+        public void setFadeCompleteListener( IFadeCompleteListener _fadeCompleteListener )
         {
             fadeCompleteListener = _fadeCompleteListener;
         }
         
-        public void ClearFadeCompleteListener()
+        public void clearFadeCompleteListener()
         {
             fadeCompleteListener = null;
         }
@@ -408,8 +434,9 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
             while( !shouldKill.get() )
             {
                 if( isFadingOut )// Fading Out
-                {                    
-                    if( currentFadeValue.getAndSet( MathHelper.clamp( MathHelper.lerp( currentFadeLerp.addAndGet( deltaTime / fadeTime ), 1.0, 0.0 ), 0.0f, 1.0f ) ) <= 0.0 )
+                {       
+                    currentFadeValue = (float)MathHelper.clampedLerp( 1.0, 0.0, currentFadeLerp.addAndGet( 0.001 / this.fadeTime ) );
+                    if( currentFadeValue <= 0.0f )
                     {
                         currentFadeLerp.set( 0.0 );
                         
@@ -421,7 +448,8 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
                 }
                 else// Fading In
                 {   
-                    if( currentFadeValue.getAndSet( MathHelper.clamp( MathHelper.lerp( currentFadeLerp.addAndGet( deltaTime / fadeTime ), 0.0, 1.0 ), 0.0f, 1.0f ) ) >= 1.0 )
+                    currentFadeValue = (float)MathHelper.clampedLerp( 0.0, 1.0, currentFadeLerp.addAndGet( 0.001 / this.fadeTime ) );
+                    if( currentFadeValue >= 1.0 )
                     {
                         currentFadeLerp.set( 0.0 );
                         
@@ -432,11 +460,14 @@ public class JukeboxRunnable implements Runnable, IAudioPlaybackListener, IFadeC
                     }
                 }
                 
-                updateVolume();
-                
-                currentTime = System.currentTimeMillis();
-                deltaTime = (double)( currentTime - lastTime ) * 0.001;
-                lastTime = currentTime;
+                try
+                {
+                    sleep( 1 );
+                }
+                catch( InterruptedException e )
+                {
+                    e.printStackTrace();
+                }
             }
         }
         

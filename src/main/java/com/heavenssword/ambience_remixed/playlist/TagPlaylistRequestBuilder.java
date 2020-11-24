@@ -14,6 +14,6 @@ public final class TagPlaylistRequestBuilder extends PlaylistRequestBuilder<TagP
     // Public Methods
     public TagPlaylistRequest buildTagPlayRequest( Set<BiomeDictionary.Type> _tagSet, boolean _isPrimary )
     {
-        return new TagPlaylistRequest( _tagSet, _isPrimary, playPriority, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
+        return new TagPlaylistRequest( _tagSet, _isPrimary, playPriority, fadeTime, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
     }
 }

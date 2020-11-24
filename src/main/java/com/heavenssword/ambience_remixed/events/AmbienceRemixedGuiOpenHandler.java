@@ -29,7 +29,7 @@ public class AmbienceRemixedGuiOpenHandler extends AmbienceRemixedEventHandler
     @SubscribeEvent
     public void onGuiOpen( GuiOpenEvent guiOpenEvent )
     {
-        AmbienceRemixed.getLogger().debug( "AmbienceRemixedGuiOpenHandler.OnGuiOpen() - Begin." );
+        //AmbienceRemixed.getLogger().debug( "AmbienceRemixedGuiOpenHandler.OnGuiOpen() - Begin." );
         
         if( guiOpenEvent == null || songDJ == null )
             return;
@@ -38,10 +38,11 @@ public class AmbienceRemixedGuiOpenHandler extends AmbienceRemixedEventHandler
         
         if( currentScreen instanceof MainMenuScreen || currentScreen instanceof MultiplayerScreen )
         {
-            AmbienceRemixed.getLogger().debug( "AmbienceRemixedGuiOpenHandler.OnGuiOpen() - Screen is of type MainMenuScreen." );
+            //AmbienceRemixed.getLogger().debug( "AmbienceRemixedGuiOpenHandler.OnGuiOpen() - Screen is of type MainMenuScreen." );
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
                                                                              .playlistStillValidCallback( mainMenuStillValidCallback )
                                                                              .playPriority( PlayPriority.HIGHEST )
+                                                                             .fadeTime( 0.5 )
                                                                              .buildEventPlayRequest( SongEvents.MAIN_MENU ) );
         }
         else if( currentScreen instanceof WinGameScreen )
@@ -49,6 +50,7 @@ public class AmbienceRemixedGuiOpenHandler extends AmbienceRemixedEventHandler
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
                                                                              .playlistStillValidCallback( creditsStillValidCallback )
                                                                              .playPriority( PlayPriority.HIGHEST )
+                                                                             .fadeTime( 0.5 )
                                                                              .buildEventPlayRequest( SongEvents.CREDITS ) );
         }
         else if( currentScreen instanceof DeathScreen )
@@ -56,6 +58,7 @@ public class AmbienceRemixedGuiOpenHandler extends AmbienceRemixedEventHandler
             songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
                                                                              .playlistStillValidCallback( deathScreenStillValidCallback )
                                                                              .playPriority( PlayPriority.HIGHEST )
+                                                                             .fadeTime( 0.05 )
                                                                              .buildEventPlayRequest( SongEvents.DEATH ) );
         }
     }

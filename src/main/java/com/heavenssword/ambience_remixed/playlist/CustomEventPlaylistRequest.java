@@ -9,9 +9,9 @@ public final class CustomEventPlaylistRequest extends PlaylistRequest
     private final String eventName;
     
     // Construction    
-    public CustomEventPlaylistRequest( String _eventName, PlayPriority _playPriority, boolean _canBeOverriden, boolean _shouldLoop, boolean _shouldDeferPlay, boolean _shouldAllowMerging, IPlaylistStillValidCallback _playListStillValidCallback )
+    public CustomEventPlaylistRequest( String _eventName, PlayPriority _playPriority, Double _fadeTime, boolean _canBeOverriden, boolean _shouldLoop, boolean _shouldDeferPlay, boolean _shouldAllowMerging, IPlaylistStillValidCallback _playListStillValidCallback )
     {
-        super( _playPriority, _canBeOverriden, _shouldLoop, _shouldDeferPlay, _shouldAllowMerging, _playListStillValidCallback );
+        super( _playPriority, _fadeTime, _canBeOverriden, _shouldLoop, _shouldDeferPlay, _shouldAllowMerging, _playListStillValidCallback );
         
         eventName = _eventName;
     }

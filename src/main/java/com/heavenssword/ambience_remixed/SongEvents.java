@@ -19,6 +19,7 @@ public enum SongEvents
     NIGHT,
     RAIN,
     UNDERWATER,
+    CAVE,
     UNDERGROUND,
     DEEP_UNDERGROUND,
     HIGH_ALTITUDE,

@@ -12,9 +12,9 @@ public final class BiomePlaylistRequest extends PlaylistRequest
     private final ResourceLocation biomeRegistry;
     
     // Construction    
-    public BiomePlaylistRequest( ResourceLocation _biomeRegistry, PlayPriority _playPriority, boolean _canBeOverriden, boolean _shouldLoop, boolean _shouldDeferPlay, boolean _shouldAllowMerging, IPlaylistStillValidCallback _playListStillValidCallback )
+    public BiomePlaylistRequest( ResourceLocation _biomeRegistry, PlayPriority _playPriority, Double _fadeTime, boolean _canBeOverriden, boolean _shouldLoop, boolean _shouldDeferPlay, boolean _shouldAllowMerging, IPlaylistStillValidCallback _playListStillValidCallback )
     {
-        super( _playPriority, _canBeOverriden, _shouldLoop, _shouldDeferPlay, _shouldAllowMerging, _playListStillValidCallback );
+        super( _playPriority, _fadeTime, _canBeOverriden, _shouldLoop, _shouldDeferPlay, _shouldAllowMerging, _playListStillValidCallback );
         
         biomeRegistry = _biomeRegistry;
     }
