@@ -1,5 +1,14 @@
 package com.heavenssword.ambience_remixed;
 
+// Java
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+// Minecraft
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.MathHelper;
+import net.minecraftforge.common.BiomeDictionary;
 
 // Ambience Remixed
 import com.heavenssword.ambience_remixed.audio.JukeboxRunnable;
@@ -9,13 +18,6 @@ import com.heavenssword.ambience_remixed.playlist.EventPlaylistRequest;
 import com.heavenssword.ambience_remixed.playlist.EventPlaylistRequestBuilder;
 import com.heavenssword.ambience_remixed.playlist.IPlaylistRequest;
 import com.heavenssword.ambience_remixed.playlist.TagPlaylistRequest;
-
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.common.BiomeDictionary;
-
-import java.util.Set;
-
 import com.heavenssword.ambience_remixed.audio.IAudioPlaybackListener;
 
 public class SongDJ implements IAudioPlaybackListener
@@ -144,9 +146,23 @@ public class SongDJ implements IAudioPlaybackListener
         
         if( songDB != null && playlistRequest != null )
         {
-            playlistRequest.setPlaylist( songDB.getSongsForBiome( playlistRequest.getBiomeRegistry() ) );
+            Set<String> combinedPlaylist = new LinkedHashSet<String>();
+
+            String[] biomePlaylist = songDB.getSongsForBiome( playlistRequest.getBiomeRegistry() );
+            if( biomePlaylist != null )
+                combinedPlaylist.addAll( Arrays.asList( biomePlaylist ) );
+   
+            String[] primaryTagPlaylist = songDB.getSongsForPrimaryTag( playlistRequest.getTagSet() );
+            if( primaryTagPlaylist != null )
+                combinedPlaylist.addAll( Arrays.asList( primaryTagPlaylist ) );
+   
+            String[] secondaryTagPlaylist = songDB.getSongsForSecondaryTag( playlistRequest.getTagSet() );
+            if( secondaryTagPlaylist != null )
+                combinedPlaylist.addAll( Arrays.asList( secondaryTagPlaylist ) );
             
-            if( playlistRequest.getPlaylist() == null )
+            if( combinedPlaylist.size() > 0 )
+                playlistRequest.setPlaylist( combinedPlaylist.toArray( new String[0] ) );
+            else
                 return false;
             
             requestPlaylist( playlistRequest );

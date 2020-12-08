@@ -1,7 +1,10 @@
 package com.heavenssword.ambience_remixed.playlist;
 
+import java.util.Set;
+
 // Minecraft
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.BiomeDictionary;
 
 public final class BiomePlaylistRequestBuilder extends PlaylistRequestBuilder<BiomePlaylistRequestBuilder>
 {        
@@ -9,8 +12,8 @@ public final class BiomePlaylistRequestBuilder extends PlaylistRequestBuilder<Bi
     public BiomePlaylistRequestBuilder() {}
     
     // Public Methods
-    public BiomePlaylistRequest buildBiomePlayRequest( ResourceLocation _biomeRegistry )
+    public BiomePlaylistRequest buildBiomePlayRequest( ResourceLocation _biomeRegistry, Set<BiomeDictionary.Type> _tagSet )
     {
-        return new BiomePlaylistRequest( _biomeRegistry, playPriority, fadeTime, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
+        return new BiomePlaylistRequest( _biomeRegistry, _tagSet, playPriority, fadeTime, canBeOverriden, shouldLoop, shouldDeferPlay, shouldAllowMerging, playlistStillValidCallback );
     }
 }

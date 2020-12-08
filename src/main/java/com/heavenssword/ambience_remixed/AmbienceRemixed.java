@@ -51,11 +51,6 @@ public class AmbienceRemixed
     public static final int UNDERGROUND_HEIGHT = 20;
     public static final int DEEP_UNDERGROUND_HEIGHT = 55;
     public static final int HIGH_ALITUDE_HEIGHT = 128;
-    
-    public static final int VILLAGE_POPULATION_REQUIREMENT = 3;
-    public static final double VILLAGE_RADIUS_X = 35.0;
-    public static final double VILLAGE_RADIUS_Y = 8.0;
-    public static final double VILLAGE_RADIUS_Z = 35.0;
 
     public static volatile double DeltaTime = 0.0;
     
