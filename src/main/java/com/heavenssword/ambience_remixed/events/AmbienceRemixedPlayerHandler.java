@@ -7,6 +7,11 @@ import java.util.Set;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.BoatEntity;
+import net.minecraft.entity.item.minecart.AbstractMinecartEntity;
+import net.minecraft.entity.passive.PigEntity;
+import net.minecraft.entity.passive.horse.AbstractHorseEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ItemStack;
@@ -44,6 +49,10 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
     private FishingStillValid fishingStillValidCallback = new FishingStillValid();
     private PumpkinHeadStillValid pumpkinHeadStillValidCallback = new PumpkinHeadStillValid();
     private UnderwaterStillValid underwaterStillValidCallback = new UnderwaterStillValid();
+    private RidingMinecartStillValid ridingMinecartStillValidCallback = new RidingMinecartStillValid();
+    private RidingBoatStillValid ridingBoatStillValidCallback = new RidingBoatStillValid();
+    private RidingHorseStillValid ridingHorseStillValidCallback = new RidingHorseStillValid();
+    private RidingPigStillValid ridingPigStillValidCallback = new RidingPigStillValid();
     private UndergroundStillValid undergroundStillValidCallback = new UndergroundStillValid();
     private DeepUndergroundStillValid deepUndergroundStillValidCallback = new DeepUndergroundStillValid();
     private RainingStillValid rainingStillValidCallback = new RainingStillValid();
@@ -65,7 +74,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         
         // We only care about the local user
         PlayerEntity player = playerTickEvent.player;
-        if( !( player instanceof ClientPlayerEntity ) || !player.isUser() )
+        if( !( player instanceof ClientPlayerEntity ) || !player.isUser() || player.isSpectator() )
             return;
         
         World world = player.world;
@@ -127,6 +136,52 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         }
         //
         
+        // Riding on a mount ( Minecart / Boat / Horse / Pig
+        Entity mount = player.getRidingEntity();
+        if( mount != null )
+        {
+            if( mount instanceof AbstractMinecartEntity )
+            {
+                if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                     .canBeOverriden( true )
+                                                                                     .playlistStillValidCallback( ridingMinecartStillValidCallback )
+                                                                                     .buildEventPlayRequest( SongEvents.RIDING_MINECART ) ) )
+                {
+                    return;
+                }
+            }
+            else if( mount instanceof BoatEntity )
+            {
+                if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                     .canBeOverriden( true )
+                                                                                     .playlistStillValidCallback( ridingBoatStillValidCallback )
+                                                                                     .buildEventPlayRequest( SongEvents.RIDING_BOAT ) ) )
+                {
+                    return;
+                }
+            }
+            else if( mount instanceof AbstractHorseEntity )
+            {
+                if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                     .canBeOverriden( true )
+                                                                                     .playlistStillValidCallback( ridingHorseStillValidCallback )
+                                                                                     .buildEventPlayRequest( SongEvents.RIDING_HORSE ) ) )
+                {
+                    return;
+                }
+            }
+            else if( mount instanceof PigEntity )
+            {
+                if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+                                                                                     .canBeOverriden( true )
+                                                                                     .playlistStillValidCallback( ridingPigStillValidCallback )
+                                                                                     .buildEventPlayRequest( SongEvents.RIDING_PIG ) ) )
+                {
+                    return;
+                }
+            }
+        }
+        
         // Player is underwater
         if( player.areEyesInFluid( FluidTags.WATER ) )
         {
@@ -165,7 +220,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
                     return;
                 }
             }
-
+            
             if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
                                                                                  .canBeOverriden( true )
                                                                                  .playlistStillValidCallback( villageStillValidCallback )
@@ -355,6 +410,8 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null || player.isSpectator() || !player.isUser() )
+                return false;
             
             return ( player != null ? ( player.getHealth() < 7.0f ) : false );
         }        
@@ -367,6 +424,8 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null || player.isSpectator() || !player.isUser() )
+                return false;
             
             return ( player != null ? ( player.fishingBobber != null ) : false );
         }        
@@ -379,7 +438,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
-            if( player == null )
+            if( player == null || player.isSpectator() || !player.isUser() )
                 return false;
             
             ItemStack headItem = player.getItemStackFromSlot( EquipmentSlotType.HEAD );
@@ -395,8 +454,74 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null || player.isSpectator() || !player.isUser() )
+                return false;
             
             return ( player != null ? player.areEyesInFluid( FluidTags.WATER ) : false );
+        }        
+    }
+    
+    public final class RidingMinecartStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null || player.isSpectator() || !player.isUser() )
+                return false;
+            
+            Entity mount = player.getRidingEntity();
+            
+            return ( mount != null && mount instanceof AbstractMinecartEntity );
+        }        
+    }
+    
+    public final class RidingBoatStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null || player.isSpectator() || !player.isUser() )
+                return false;
+            
+            Entity mount = player.getRidingEntity();
+            
+            return ( mount != null && mount instanceof BoatEntity );
+        }        
+    }
+    
+    public final class RidingHorseStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null || player.isSpectator() || !player.isUser() )
+                return false;
+            
+            Entity mount = player.getRidingEntity();
+            
+            return ( mount != null && mount instanceof AbstractHorseEntity );
+        }        
+    }
+    
+    public final class RidingPigStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null || player.isSpectator() || !player.isUser() )
+                return false;
+            
+            Entity mount = player.getRidingEntity();
+            
+            return ( mount != null && mount instanceof PigEntity );
         }        
     }
     
@@ -407,7 +532,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
-            if( player == null )
+            if( player == null || player.isSpectator() || !player.isUser() )
                 return false;
             
             World world = player.world;
@@ -428,7 +553,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
-            if( player == null )
+            if( player == null || player.isSpectator() || !player.isUser() )
                 return false;
             
             World world = player.world;
@@ -449,7 +574,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
-            if( player == null )
+            if( player == null || player.isSpectator() || !player.isUser() )
                 return false;
             
             World world = player.world;
@@ -467,7 +592,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
-            if( player == null )
+            if( player == null || player.isSpectator() || !player.isUser() )
                 return false;
             
             World world = player.world;
@@ -487,7 +612,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
-            if( player == null )
+            if( player == null || player.isSpectator() || !player.isUser() )
                 return false;
             
             World world = player.world;
@@ -513,12 +638,17 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
-            if( player == null )
+            if( player == null || player.isSpectator() || !player.isUser() )
                 return false;
+                        
+            long time = player.world.getDayTime() % 24000;
+            boolean isNightime = time > 13300 && time < 23200;
             
             VillageScanner.scan( player );
             
-            return ( VillageScanner.getMetVillageRequirement() && VillageScanner.getIsInsideEstimatedVillageBounds( player.getPosition() ) );
+            return ( VillageScanner.getMetVillageRequirement() && VillageScanner.getIsInsideEstimatedVillageBounds( player.getPosition() ) ) && !ridingHorseStillValidCallback.isPlaylistStillValid()
+                                                                                                                                             && !ridingPigStillValidCallback.isPlaylistStillValid() 
+                                                                                                                                             && !( isNightime && songDJ.canRequestEventPlaylist( SongEvents.VILLAGE_NIGHT ) );
         }        
     }
     
@@ -529,7 +659,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
-            if( player == null )
+            if( player == null || player.isSpectator() || !player.isUser() )
                 return false;
             
             World world = player.world;
@@ -539,7 +669,8 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             
             VillageScanner.scan( player );
             
-            return ( ( VillageScanner.getMetVillageRequirement() && VillageScanner.getIsInsideEstimatedVillageBounds( player.getPosition() ) ) && isNightime );
+            return ( ( VillageScanner.getMetVillageRequirement() && VillageScanner.getIsInsideEstimatedVillageBounds( player.getPosition() ) ) && isNightime ) && !ridingHorseStillValidCallback.isPlaylistStillValid()
+                                                                                                                                                               && !ridingPigStillValidCallback.isPlaylistStillValid();
         }        
     }
     
@@ -550,7 +681,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         public boolean isPlaylistStillValid()
         {            
             ClientPlayerEntity player = Minecraft.getInstance().player;
-            if( player == null )
+            if( player == null || player.isSpectator() || !player.isUser() )
                 return false;
             
             World world = player.world;

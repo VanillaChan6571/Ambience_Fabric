@@ -13,7 +13,6 @@ import com.heavenssword.ambience_remixed.PlayPriority;
 import com.heavenssword.ambience_remixed.SongEvents;
 import com.heavenssword.ambience_remixed.playlist.EventPlaylistRequestBuilder;
 import com.heavenssword.ambience_remixed.playlist.IPlaylistStillValidCallback;
-import com.heavenssword.ambience_remixed.AmbienceRemixed;
 
 public class AmbienceRemixedChangedDimensionHandler extends AmbienceRemixedEventHandler
 {

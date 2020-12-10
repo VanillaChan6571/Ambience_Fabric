@@ -13,7 +13,6 @@ import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 // Ambience Remixed
-import com.heavenssword.ambience_remixed.AmbienceRemixed;
 import com.heavenssword.ambience_remixed.PlayPriority;
 import com.heavenssword.ambience_remixed.SongEvents;
 import com.heavenssword.ambience_remixed.playlist.EventPlaylistRequestBuilder;

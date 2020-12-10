@@ -51,9 +51,11 @@ public final class VillageScanner
     public static final double SCAN_RADIUS_Z = 32.0;
     
     public static final int VILLAGE_POPULATION_REQUIREMENT = 1;
+    public static final int UNDENIABLE_VILLAGE_POPULATION_REQUIREMENT = 3;
     
     public static final float VILLAGE_SCORE_REQUIREMENT_LOW = 10.0f;
     public static final float VILLAGE_SCORE_REQUIREMENT_HIGH = 30.0f;
+    public static final float UNDENIABLE_VILLAGE_SCORE_REQUIREMENT = 50.0f;
     
     public static final float VILLAGER_SCORE_WEIGHT = 3.0f;
     public static final float ILLAGER_SCORE_WEIGHT = 2.5f;
@@ -75,6 +77,8 @@ public final class VillageScanner
     private static BlockPos previousScanPos = null; 
     
     private static MutableBoundingBox estimatedVillageBounds = new MutableBoundingBox();
+    
+    private static boolean wasUndeniableVillageFound = false;
     
     private static int numVillagersNearby = 0;
     private static int numIllagersNearby = 0;
@@ -191,7 +195,8 @@ public final class VillageScanner
         //AmbienceRemixed.getLogger().debug( "Estimated VillageScore = " + estimatedVillageScore );
         
         return ( getIsVillagerThresholdMet() && estimatedVillageScore >= VILLAGE_SCORE_REQUIREMENT_LOW ) ||
-               ( estimatedVillageScore >= VILLAGE_SCORE_REQUIREMENT_HIGH );
+               ( estimatedVillageScore >= VILLAGE_SCORE_REQUIREMENT_HIGH ) ||
+               wasUndeniableVillageFound;
     }
     
     public static void scan( ClientPlayerEntity player )
@@ -264,13 +269,22 @@ public final class VillageScanner
             
             recalculateEstimatedVillageBounds( blockPair.getFirst() );
         }
+        
+        float estimatedVillageScore = getEstimatedVillageScore();
+        if( estimatedVillageScore >= UNDENIABLE_VILLAGE_SCORE_REQUIREMENT && getNumVillagersNearby() >= UNDENIABLE_VILLAGE_POPULATION_REQUIREMENT )
+            wasUndeniableVillageFound = true;
+        else if( estimatedVillageScore <= 0.0f )
+            wasUndeniableVillageFound = false;
     }
     
     // Private Methods
     private static void clearStats()
     {
-        estimatedVillageBounds.maxX = estimatedVillageBounds.maxY = estimatedVillageBounds.maxZ = 0;
-        estimatedVillageBounds.minX = estimatedVillageBounds.minY = estimatedVillageBounds.minZ = 0;
+        if( !wasUndeniableVillageFound )
+        {
+            estimatedVillageBounds.maxX = estimatedVillageBounds.maxY = estimatedVillageBounds.maxZ = 0;
+            estimatedVillageBounds.minX = estimatedVillageBounds.minY = estimatedVillageBounds.minZ = 0;
+        }
                 
         numVillagersNearby = 0;
         numIllagersNearby = 0;

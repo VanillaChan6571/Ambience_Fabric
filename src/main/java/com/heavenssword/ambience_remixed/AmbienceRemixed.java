@@ -48,8 +48,8 @@ public class AmbienceRemixed
     public static final String[] OBF_MC_MUSIC_TICKER = { "aM", "field_147126_aw", "mcMusicTicker" };
     public static final String[] OBF_MAP_BOSS_INFOS = { "g", "field_184060_g", "mapBossInfos" };
     
-    public static final int UNDERGROUND_HEIGHT = 20;
-    public static final int DEEP_UNDERGROUND_HEIGHT = 55;
+    public static final int UNDERGROUND_HEIGHT = 55;
+    public static final int DEEP_UNDERGROUND_HEIGHT = 20;
     public static final int HIGH_ALITUDE_HEIGHT = 128;
 
     public static volatile double DeltaTime = 0.0;
