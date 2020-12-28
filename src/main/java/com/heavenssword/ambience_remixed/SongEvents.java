@@ -15,6 +15,7 @@ public enum SongEvents
     
     BATTLE,
     BATTLE_HORDE,
+    ILLAGER_RAID,
     
     NIGHT,
     RAIN,

@@ -23,7 +23,7 @@ public class AmbienceRemixedChangedDimensionHandler extends AmbienceRemixedEvent
     private RegistryKey<World> currentWorldLoaded = null;
     
     // Public Methods
-    @SubscribeEvent
+    //@SubscribeEvent
     public void onChangedDimensionHandler( PlayerEvent.PlayerChangedDimensionEvent changedDimensionEvent )
     {
         //AmbienceRemixed.getLogger().debug( "AmbienceRemixedChangedDimensionHandler.OnChangedDimensionHandler() - Begin." );

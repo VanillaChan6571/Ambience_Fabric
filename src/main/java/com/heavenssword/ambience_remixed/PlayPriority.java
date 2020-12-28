@@ -6,12 +6,13 @@ public enum PlayPriority
     OVERRIDE( -1 ),
     
     HIGHEST( 0 ),
-    HIGH( 1 ),
-    MID_HIGH( 2 ),
-    MEDIUM( 3 ),
-    MID_LOW( 4 ),
-    LOW( 5 ),
-    LOWEST( 6 );
+    VERY_HIGH( 1 ),
+    HIGH( 2 ),
+    MID_HIGH( 3 ),
+    MEDIUM( 4 ),
+    MID_LOW( 5 ),
+    LOW( 6 ),
+    LOWEST( 7 );
     
     // Public Field
     public final int Value;

@@ -54,7 +54,7 @@ public final class VillageScanner
     public static final int UNDENIABLE_VILLAGE_POPULATION_REQUIREMENT = 3;
     
     public static final float VILLAGE_SCORE_REQUIREMENT_LOW = 10.0f;
-    public static final float VILLAGE_SCORE_REQUIREMENT_HIGH = 30.0f;
+    public static final float VILLAGE_SCORE_REQUIREMENT_HIGH = 40.0f;
     public static final float UNDENIABLE_VILLAGE_SCORE_REQUIREMENT = 50.0f;
     
     public static final float VILLAGER_SCORE_WEIGHT = 3.0f;
@@ -72,6 +72,9 @@ public final class VillageScanner
     public static final float CRAFTING_SITE_SCORE_WEIGHT = 0.7f;
     public static final float BED_SCORE_WEIGHT = 2.0f;
     public static final float DOOR_SCORE_WEIGHT = 1.75f;
+    
+    public static final double ILLAGER_RAID_DECAY_DURATION = 15.0; 
+    public static final int ILLAGER_RAID_POPULATION_REQUIREMENT = 5;
     
     // Private Static Fields
     private static BlockPos previousScanPos = null; 
@@ -95,6 +98,8 @@ public final class VillageScanner
     private static int numHousesNearby = 0;
     private static int numDoorsNearby = 0;
     private static int numCraftingSitesNearby = 0;
+    
+    private static double illagerRaidTimer = 0.0;
     
     // Public Static Methods
     public static int getNumVillagersNearby()
@@ -199,7 +204,12 @@ public final class VillageScanner
                wasUndeniableVillageFound;
     }
     
-    public static void scan( ClientPlayerEntity player )
+    public static boolean getIsPotentialIllagerRaidOccurring()
+    {
+        return illagerRaidTimer > 0.0f;
+    }
+    
+    public static void scan( ClientPlayerEntity player, double deltaTime )
     {
         if( player.isSpectator() || ( previousScanPos != null && player.getPosition().equals( previousScanPos ) ) )
             return;
@@ -275,6 +285,11 @@ public final class VillageScanner
             wasUndeniableVillageFound = true;
         else if( estimatedVillageScore <= 0.0f )
             wasUndeniableVillageFound = false;
+        
+        if( numIllagersNearby >= ILLAGER_RAID_POPULATION_REQUIREMENT )
+            illagerRaidTimer = ILLAGER_RAID_DECAY_DURATION;
+        else
+            illagerRaidTimer -= deltaTime;
     }
     
     // Private Methods

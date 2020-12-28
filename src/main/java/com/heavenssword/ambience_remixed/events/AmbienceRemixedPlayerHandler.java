@@ -16,6 +16,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
@@ -46,6 +47,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
     
     // Private Fields
     private DyingStillValid dyingStillValidCallback = new DyingStillValid();
+    private IllagerRaidStillValid illagerRaidStillValid = new IllagerRaidStillValid();
     private FishingStillValid fishingStillValidCallback = new FishingStillValid();
     private PumpkinHeadStillValid pumpkinHeadStillValidCallback = new PumpkinHeadStillValid();
     private UnderwaterStillValid underwaterStillValidCallback = new UnderwaterStillValid();
@@ -61,6 +63,10 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
     private VillageStillValid villageStillValidCallback = new VillageStillValid();
     private VillageAtNightStillValid villageAtNightStillValidCallback = new VillageAtNightStillValid();
     private BiomeStillValid biomeStillValidCallback = new BiomeStillValid();
+    private TheNetherStillValid theNetherStillValidCallback = new TheNetherStillValid();
+    private TheEndStillValid theEndStillValidCallback = new TheEndStillValid();
+    
+    private RegistryKey<World> currentWorldLoaded = null;
     
     private double playerUnderwaterTime = 0.0;
     
@@ -87,7 +93,8 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         String customEventName = event.getEventName();
         if( customEventName != null && customEventName != "" )
         {
-            if( songDJ.requestPlaylistForCustomEvent( new CustomEventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+            if( songDJ.requestPlaylistForCustomEvent( new CustomEventPlaylistRequestBuilder().playPriority( PlayPriority.VERY_HIGH )
+                                                                                             .canBeOverriden( true )
                                                                                              .buildCustomEventPlayRequest( customEventName ) ) )
             {
                 return;
@@ -98,11 +105,26 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         // Player is Dying
         if( player.getHealth() < 7.0f )
         {
-            if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
+            if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.VERY_HIGH )
                                                                                  .canBeOverriden( true )
                                                                                  .playlistStillValidCallback( dyingStillValidCallback )
                                                                                  .fadeTime( 0.25 )
                                                                                  .buildEventPlayRequest( SongEvents.DYING ) ) )
+            {
+                return;
+            }
+        }
+        //
+        
+        VillageScanner.scan( (ClientPlayerEntity)player, AmbienceRemixed.DeltaTime );
+        
+        // Is an Illager Raid Occurring
+        if( VillageScanner.getIsPotentialIllagerRaidOccurring() )//IllagerRaidStillValid
+        {
+            if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.VERY_HIGH )
+                                                                                 .canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( illagerRaidStillValid )
+                                                                                 .buildEventPlayRequest( SongEvents.ILLAGER_RAID ) ) )
             {
                 return;
             }
@@ -130,6 +152,32 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
                                                                                  .canBeOverriden( true )
                                                                                  .playlistStillValidCallback( pumpkinHeadStillValidCallback )
                                                                                  .buildEventPlayRequest( SongEvents.WEARING_PUMPKIN_HEAD ) ) )
+            {
+                return;
+            }
+        }
+        //
+        
+        // Check current dimension
+        currentWorldLoaded = world.getDimensionKey();
+        
+        // In Nether
+        if( currentWorldLoaded.equals( World.THE_NETHER ) )
+        {
+            if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( theNetherStillValidCallback )
+                                                                                 .playPriority( PlayPriority.HIGH )
+                                                                                 .buildEventPlayRequest( SongEvents.IN_THE_NETHER ) ) )
+            {
+                return;
+            }
+        }// In End
+        else if( currentWorldLoaded.equals( World.THE_END ) )
+        {
+            if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().canBeOverriden( true )
+                                                                                 .playlistStillValidCallback( theEndStillValidCallback )
+                                                                                 .playPriority( PlayPriority.HIGH )
+                                                                                 .buildEventPlayRequest( SongEvents.IN_THE_END ) ) )
             {
                 return;
             }
@@ -207,7 +255,6 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         boolean isNightime = time > 13300 && time < 23200;
         
         // Player is in/near a Village
-        VillageScanner.scan( (ClientPlayerEntity)player );
         if( VillageScanner.getMetVillageRequirement() && VillageScanner.getIsInsideEstimatedVillageBounds( player.getPosition() ) )
         {
             if( isNightime )
@@ -231,7 +278,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         }
         //
         
-        if( world.getDimensionKey().equals( World.OVERWORLD ) )
+        if( currentWorldLoaded.equals( World.OVERWORLD ) )
         {
             // Player is underground
             if( !world.canSeeSky( pos ) )
@@ -240,7 +287,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
                 {
                     if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
                                                                                          .canBeOverriden( true )
-                                                                                         .playlistStillValidCallback( undergroundStillValidCallback )
+                                                                                         .playlistStillValidCallback( deepUndergroundStillValidCallback )
                                                                                          .buildEventPlayRequest( SongEvents.DEEP_UNDERGROUND ) ) )
                     {
                         return;
@@ -250,7 +297,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
                 {
                     if( songDJ.requestPlaylistForEvent( new EventPlaylistRequestBuilder().playPriority( PlayPriority.HIGH )
                                                                                          .canBeOverriden( true )
-                                                                                         .playlistStillValidCallback( deepUndergroundStillValidCallback )
+                                                                                         .playlistStillValidCallback( undergroundStillValidCallback )
                                                                                          .buildEventPlayRequest( SongEvents.UNDERGROUND ) ) )
                     {
                         return;
@@ -347,7 +394,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
     {
         //AmbienceRemixed.getLogger().debug( "AmbienceRemixedPlayerHandler.OnPlayerSleep() - Begin." );
         
-        if( playerSleepEvent == null || songDJ == null )
+        if( playerSleepEvent == null || playerSleepEvent.getResultStatus() != null ||songDJ == null )
             return;
 
         // We only care about the local user
@@ -417,6 +464,22 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
         }        
     }
     
+    public final class IllagerRaidStillValid implements IPlaylistStillValidCallback
+    {
+        @SuppressWarnings( "resource" )
+        @Override
+        public boolean isPlaylistStillValid()
+        {            
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if( player == null || player.isSpectator() || !player.isUser() )
+                return false;
+            
+            VillageScanner.scan( player, AmbienceRemixed.DeltaTime );
+            
+            return VillageScanner.getIsPotentialIllagerRaidOccurring();
+        }
+    }
+    
     public final class FishingStillValid implements IPlaylistStillValidCallback
     {
         @SuppressWarnings( "resource" )
@@ -444,6 +507,24 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             ItemStack headItem = player.getItemStackFromSlot( EquipmentSlotType.HEAD );
             
             return ( headItem != null ? headItem.getItem().equals( Blocks.PUMPKIN.asItem() ) : false );
+        }        
+    }
+    
+    public final class TheNetherStillValid implements IPlaylistStillValidCallback
+    {
+        @Override
+        public boolean isPlaylistStillValid()
+        {
+            return ( currentWorldLoaded != null && currentWorldLoaded.equals( World.THE_NETHER ) );
+        }        
+    }
+    
+    public final class TheEndStillValid implements IPlaylistStillValidCallback
+    {
+        @Override
+        public boolean isPlaylistStillValid()
+        {             
+            return ( currentWorldLoaded != null && currentWorldLoaded.equals( World.THE_END ) );
         }        
     }
     
@@ -540,7 +621,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             
             boolean inOverworld = world.getDimensionKey().equals( World.OVERWORLD );
             boolean cantSeeSky = !world.canSeeSky( pos );
-            boolean isUndergroundHeight = pos.getY() < AmbienceRemixed.UNDERGROUND_HEIGHT;
+            boolean isUndergroundHeight = pos.getY() < AmbienceRemixed.UNDERGROUND_HEIGHT && pos.getY() >= AmbienceRemixed.DEEP_UNDERGROUND_HEIGHT;
             
             return ( inOverworld && cantSeeSky && isUndergroundHeight );
         }        
@@ -623,7 +704,7 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             boolean inOverworld = world.getDimensionKey().equals( World.OVERWORLD );
             
             // Is the player in a village? Because VILLAGE_NIGHT should override this event then.
-            VillageScanner.scan( player );
+            VillageScanner.scan( player, AmbienceRemixed.DeltaTime );
             
             boolean isVillageNightValid = ( VillageScanner.getMetVillageRequirement() && VillageScanner.getIsInsideEstimatedVillageBounds( player.getPosition() ) ) && songDJ.canRequestEventPlaylist( SongEvents.VILLAGE_NIGHT );
             
@@ -640,15 +721,19 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
             ClientPlayerEntity player = Minecraft.getInstance().player;
             if( player == null || player.isSpectator() || !player.isUser() )
                 return false;
-                        
-            long time = player.world.getDayTime() % 24000;
+            
+            World world = player.world;
+            boolean inOverworld = world.getDimensionKey().equals( World.OVERWORLD );
+            
+            long time = world.getDayTime() % 24000;
             boolean isNightime = time > 13300 && time < 23200;
             
-            VillageScanner.scan( player );
+            VillageScanner.scan( player, AmbienceRemixed.DeltaTime );
             
-            return ( VillageScanner.getMetVillageRequirement() && VillageScanner.getIsInsideEstimatedVillageBounds( player.getPosition() ) ) && !ridingHorseStillValidCallback.isPlaylistStillValid()
-                                                                                                                                             && !ridingPigStillValidCallback.isPlaylistStillValid() 
-                                                                                                                                             && !( isNightime && songDJ.canRequestEventPlaylist( SongEvents.VILLAGE_NIGHT ) );
+            return inOverworld && ( VillageScanner.getMetVillageRequirement() && VillageScanner.getIsInsideEstimatedVillageBounds( player.getPosition() ) ) 
+                               && !ridingHorseStillValidCallback.isPlaylistStillValid()
+                               && !ridingPigStillValidCallback.isPlaylistStillValid()
+                               && !( isNightime && songDJ.canRequestEventPlaylist( SongEvents.VILLAGE_NIGHT ) );
         }        
     }
     
@@ -663,14 +748,16 @@ public class AmbienceRemixedPlayerHandler extends AmbienceRemixedEventHandler
                 return false;
             
             World world = player.world;
+            boolean inOverworld = world.getDimensionKey().equals( World.OVERWORLD );
             
             long time = world.getDayTime() % 24000;
             boolean isNightime = time > 13300 && time < 23200;
             
-            VillageScanner.scan( player );
+            VillageScanner.scan( player, AmbienceRemixed.DeltaTime );
             
-            return ( ( VillageScanner.getMetVillageRequirement() && VillageScanner.getIsInsideEstimatedVillageBounds( player.getPosition() ) ) && isNightime ) && !ridingHorseStillValidCallback.isPlaylistStillValid()
-                                                                                                                                                               && !ridingPigStillValidCallback.isPlaylistStillValid();
+            return inOverworld && ( ( VillageScanner.getMetVillageRequirement() && VillageScanner.getIsInsideEstimatedVillageBounds( player.getPosition() ) ) && isNightime ) 
+                               && !ridingHorseStillValidCallback.isPlaylistStillValid()
+                               && !ridingPigStillValidCallback.isPlaylistStillValid();
         }        
     }
     
