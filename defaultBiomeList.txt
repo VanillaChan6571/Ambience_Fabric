@@ -78,3 +78,13 @@ Registry Name: minecraft:worldgen/biome
 	Entry: 171, minecraft:crimson_forest, minecraft:crimson_forest
 	Entry: 172, minecraft:warped_forest, minecraft:warped_forest
 	Entry: 173, minecraft:basalt_deltas, minecraft:basalt_deltas
+	Entry: 200, minecraft:dripstone_caves, minecraft:dripstone_caves
+	Entry: 201, minecraft:lush_caves, minecraft:lush_caves
+	Entry: 203, minecraft:frozen_peaks, minecraft:frozen_peaks
+	Entry: 204, minecraft:jagged_peaks, minecraft:jagged_peaks
+	Entry: 205, minecraft:snowy_slopes, minecraft:snowy_slopes
+	Entry: 206, minecraft:grove, minecraft:grove
+	Entry: 207, minecraft:meadow, minecraft:meadow
+	Entry: 208, minecraft:mangrove_swamp, minecraft:mangrove_swamp
+	Entry: 211, minecraft:deep_dark, minecraft:deep_dark
+	Entry: 212, minecraft:cherry_grove, minecraft:cherry_grove
